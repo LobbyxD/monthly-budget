@@ -1,18 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Layout from "./layout/Layout";
 import MainMenu from "./pages/MainMenu";
 import UserMainMenu from "./pages/UserMainMenu";
+import "./style/global.css";
 
-function App() {
+export default function App() {
   return (
-    <div className="min-h-screen bg-background text-text">
-      <Router>
-        <Routes>
+    <Router>
+      <Routes>
+        <Route element={<Layout />}>
           <Route path="/" element={<MainMenu />} />
           <Route path="/user/:id" element={<UserMainMenu />} />
-        </Routes>
-      </Router>
-    </div>
+        </Route>
+      </Routes>
+    </Router>
   );
 }
-
-export default App;

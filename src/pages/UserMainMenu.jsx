@@ -1,13 +1,18 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "../style/global.css";
 
-export default function UserMainMenu({ username }) {
+export default function UserMainMenu() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams();
+
+  // ✅ username comes from navigation state
+  const username = location.state?.username || "User";
 
   const buttons = [
-    { label: "Current Month", path: "/current-month" },
-    { label: "Last Month", path: "/last-month" },
-    { label: "Archive", path: "/archive" },
+    { label: "Current Month", path: `/user/${id}/current-month` },
+    { label: "Last Month", path: `/user/${id}/last-month` },
+    { label: "Archive", path: `/user/${id}/archive` },
     { label: "Return", path: "/" },
   ];
 
@@ -15,9 +20,9 @@ export default function UserMainMenu({ username }) {
     <div className="user-menu-page">
       <div className="user-menu-container">
         <h1 className="user-menu-title">
-          {username ? `${username}'s Dashboard` : "User Dashboard"}
+          {`${username}'s Dashboard`}
         </h1>
-        <p>username:{username}</p>
+        <p className="user-id">User ID: {id}</p>
 
         <div className="user-menu-buttons">
           {buttons.map((btn) => (
