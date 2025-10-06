@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import "./MainMenu.css"; // import the CSS file
+import "./MainMenu.css";
 
 export default function MainMenu() {
   const [users, setUsers] = useState([]);
@@ -16,45 +16,69 @@ export default function MainMenu() {
       .from("users")
       .select("*")
       .order("id", { ascending: true });
+
     if (error) console.error("Error fetching users:", error);
     else setUsers(data || []);
     setLoading(false);
   };
 
+  // Realtime listener
   useEffect(() => {
     fetchUsers();
+
+    const channel = supabase
+      .channel("public:users") // ✅ correct channel naming
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "users",
+        },
+        (payload) => {
+          console.log("Realtime change received:", payload);
+          fetchUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  // Create user
+
+  // Create new user
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!newUsername.trim()) return;
-
     const { error } = await supabase
       .from("users")
-      .insert([{ username: newUsername }]);
+      .insert([{ username: newUsername.trim() }]);
     if (error) alert(error.message);
     else {
       setShowModal(false);
       setNewUsername("");
-      fetchUsers();
     }
   };
 
-  // Delete user
+  // Delete user (optimistic)
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    if (!window.confirm("Delete this user?")) return;
     setDeletingId(id);
+    setUsers((prev) => prev.filter((u) => u.id !== id)); // instant UI update
     const { error } = await supabase.from("users").delete().eq("id", id);
-    if (error) alert(error.message);
-    else setUsers(users.filter((u) => u.id !== id));
+    if (error) {
+      alert(error.message);
+      fetchUsers();
+    }
     setDeletingId(null);
   };
 
   return (
     <div className="page">
       <header className="header">
-        <h1>User Management</h1>
+        <h1>Household Users</h1>
         <button className="create-btn" onClick={() => setShowModal(true)}>
           + Create User
         </button>
@@ -63,15 +87,13 @@ export default function MainMenu() {
       {loading ? (
         <p className="message">Loading users...</p>
       ) : users.length === 0 ? (
-        <p className="message">
-          No users found. Click "Create User" to add one.
-        </p>
+        <p className="message">No users found. Click “Create User”.</p>
       ) : (
         <div className="user-grid">
           {users.map((user) => (
             <div key={user.id} className="user-card">
               <div className="avatar">
-                {user.username ? user.username[0].toUpperCase() : "?"}
+                {user.username?.[0]?.toUpperCase() || "?"}
               </div>
               <h2>{user.username}</h2>
               <p className="date">
