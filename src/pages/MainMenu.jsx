@@ -13,7 +13,10 @@ export default function MainMenu() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data, error } = await supabase.from("users").select("*").order("id");
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .order("id");
     if (error) console.error("Error fetching users:", error);
     else setUsers(data || []);
     setLoading(false);
@@ -23,7 +26,11 @@ export default function MainMenu() {
     fetchUsers();
     const channel = supabase
       .channel("public:users")
-      .on("postgres_changes", { event: "*", schema: "public", table: "users" }, fetchUsers)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "users" },
+        fetchUsers
+      )
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, []);
@@ -31,7 +38,9 @@ export default function MainMenu() {
   const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!newUsername.trim()) return;
-    const { error } = await supabase.from("users").insert([{ username: newUsername.trim() }]);
+    const { error } = await supabase
+      .from("users")
+      .insert([{ username: newUsername.trim() }]);
     if (error) alert(error.message);
     else {
       setShowModal(false);
@@ -69,23 +78,25 @@ export default function MainMenu() {
               <div
                 key={user.id}
                 className="user-card clickable"
-                onClick={() => navigate(`/user/${user.id}`, { state: { username: user.username } })}
+                onClick={() =>
+                  navigate(`/user/${user.id}`, {
+                    state: { username: user.username },
+                  })
+                }
               >
-                <div className="avatar">
-                  {user.username?.[0]?.toUpperCase() || "?"}
+                <div className="user-left">
+                  <div className="avatar">
+                    {user.username?.[0]?.toUpperCase() || "?"}
+                  </div>
+                  <h2>{user.username}</h2>
                 </div>
-                <h2>{user.username}</h2>
-                <p className="date">
-                  {user.creation_date
-                    ? new Date(user.creation_date).toLocaleDateString()
-                    : "—"}
-                </p>
+
                 <button
                   className="delete-btn"
                   onClick={(e) => handleDelete(user.id, e)}
                   disabled={deletingId === user.id}
                 >
-                  {deletingId === user.id ? "Deleting..." : "Delete"}
+                  {deletingId === user.id ? "Deleting..." : "X"}
                 </button>
               </div>
             ))}
