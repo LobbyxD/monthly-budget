@@ -1,16 +1,33 @@
-/* Global layout */
-.page {
-  min-height: 100vh;
+/* ===============================
+   Base Styles / Reset
+=============================== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", sans-serif;
   background-color: #0d1117;
   color: #e5e7eb;
+  line-height: 1.5;
+}
+
+/* ===============================
+   Layout Utilities
+=============================== */
+.page {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 3rem 1rem;
-  font-family: "Inter", sans-serif;
 }
 
-/* Header */
+/* ===============================
+   Header
+=============================== */
 .header {
   display: flex;
   justify-content: space-between;
@@ -26,29 +43,69 @@
   color: #3b82f6;
 }
 
+/* ===============================
+   Buttons
+=============================== */
+.create-btn,
+.delete-btn,
+.menu-btn {
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 8px;
+  padding: 0.7rem 1.4rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
 .create-btn {
   background-color: #3b82f6;
   color: white;
   border: none;
-  padding: 0.7rem 1.4rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: all 0.2s ease;
 }
 
 .create-btn:hover {
   background-color: #2563eb;
 }
 
-/* Loading & Empty messages */
+.delete-btn {
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.delete-btn:hover {
+  background-color: #ef4444;
+  color: white;
+}
+
+.menu-btn {
+  background-color: #1f2937;
+  color: #e5e7eb;
+  border: 1px solid #2d3748;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+}
+
+.menu-btn:hover {
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, 0.25);
+}
+
+/* ===============================
+   Messages
+=============================== */
 .message {
   color: #9ca3af;
   margin-top: 3rem;
   font-size: 1.1rem;
 }
 
-/* User grid */
+/* ===============================
+   User Grid / Cards
+=============================== */
 .user-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -64,7 +121,6 @@
   padding: 1.5rem;
   text-align: center;
   transition: all 0.25s ease;
-  box-shadow: 0 0 0 transparent;
 }
 
 .user-card:hover {
@@ -86,35 +142,9 @@
   margin: 0 auto 0.8rem;
 }
 
-.user-card h2 {
-  margin: 0.3rem 0;
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-.user-card .date {
-  color: #9ca3af;
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
-}
-
-.delete-btn {
-  background-color: transparent;
-  color: #ef4444;
-  border: 1px solid #ef4444;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-}
-
-.delete-btn:hover {
-  background-color: #ef4444;
-  color: white;
-}
-
-/* Modal */
+/* ===============================
+   Modal
+=============================== */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -191,65 +221,53 @@
   background-color: #2563eb;
 }
 
-/* ---------- Responsive Enhancements ---------- */
-
-/* Up to tablet */
-@media (max-width: 900px) {
-  .page {
-    padding: 2rem 1rem;
-  }
-
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-  }
-
-  .create-btn {
-    width: 100%;
-    text-align: center;
-  }
-
-  .user-grid {
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  }
+/* ===============================
+   UserMainMenu
+=============================== */
+.user-menu-page {
+  min-height: 100vh;
+  background-color: #0d1117;
+  color: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Inter", sans-serif;
+  padding: 2rem;
 }
 
-/* Mobile phones */
-@media (max-width: 600px) {
-  .header h1 {
-    font-size: 1.5rem;
-  }
-
-  .user-card {
-    padding: 1.2rem;
-  }
-
-  .avatar {
-    width: 50px;
-    height: 50px;
-    font-size: 1.4rem;
-  }
-
-  .modal {
-    width: 95%;
-    padding: 1.2rem;
-  }
-
-  .modal-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .modal-actions button {
-    width: 100%;
-  }
+.user-menu-container {
+  background-color: #161b22;
+  border: 1px solid #1f2937;
+  border-radius: 20px;
+  padding: 3rem 4rem;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+  animation: fadeIn 0.5s ease-in-out;
 }
 
-/* Disable hover effects on touch devices */
-@media (hover: none) {
-  .user-card:hover {
-    transform: none;
-    box-shadow: none;
+.user-menu-title {
+  font-size: 1.8rem;
+  color: #3b82f6;
+  margin-bottom: 2.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.user-menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

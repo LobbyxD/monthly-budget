@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import MainMenu from "./pages/MainMenu";
-import UserPage from "./pages/UserPage";
+import UserMainMenu from "./pages/UserMainMenu";
 
 function App() {
   return (
@@ -8,7 +8,7 @@ function App() {
       <Router>
         <Routes>
           <Route path="/" element={<MainMenu />} />
-          <Route path="/user/:id" element={<UserPage />} />
+          <Route path="/user/:id" element={<UserMainMenu />} />
         </Routes>
       </Router>
     </div>

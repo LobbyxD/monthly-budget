@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
-import "./MainMenu.css";
+import "../style/global.css";
 
 export default function MainMenu() {
   const [users, setUsers] = useState([]);
@@ -46,7 +46,6 @@ export default function MainMenu() {
       supabase.removeChannel(channel);
     };
   }, []);
-
 
   // Create new user
   const handleCreateUser = async (e) => {
