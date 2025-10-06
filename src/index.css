@@ -1,19 +1,14 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* src/index.css */
 
-@theme {
-  --color-background: #0d1117;
-  --color-surface: #161b22;
-  --color-primary: #3b82f6;
-  --color-text: #e5e7eb;
-  --color-muted: #9ca3af;
-}
-
-:root {
-  color-scheme: dark;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 body {
-  @apply bg-background text-text;
+  font-family: "Inter", sans-serif;
+  background-color: #0d1117;
+  color: #e5e7eb;
+  line-height: 1.5;
 }
