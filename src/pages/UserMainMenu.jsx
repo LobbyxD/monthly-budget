@@ -1,5 +1,6 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import "../style/global.css";
+import "../style/usermainmenu.css";
 
 export default function UserMainMenu() {
   const navigate = useNavigate();

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
+// MainMenu.jsx
 import "../style/global.css";
+import "../style/mainmenu.css";
+
 
 export default function MainMenu() {
   const [users, setUsers] = useState([]);
