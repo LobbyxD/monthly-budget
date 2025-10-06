@@ -22,7 +22,6 @@ export default function UserMainMenu() {
         <h1 className="user-menu-title">
           {`${username}'s Dashboard`}
         </h1>
-        <p className="user-id">User ID: {id}</p>
 
         <div className="user-menu-buttons">
           {buttons.map((btn) => (
