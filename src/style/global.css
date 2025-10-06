@@ -15,14 +15,16 @@ body {
 }
 
 /* ===============================
-   Layout Utilities
+   Layout
 =============================== */
 .page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem 1rem;
+  background-color: #0d1117;
+  color: #e5e7eb;
+  padding: 3rem 2rem;
 }
 
 /* ===============================
@@ -67,17 +69,6 @@ body {
   background-color: #2563eb;
 }
 
-.delete-btn {
-  background-color: transparent;
-  color: #ef4444;
-  border: 1px solid #ef4444;
-}
-
-.delete-btn:hover {
-  background-color: #ef4444;
-  color: white;
-}
-
 .menu-btn {
   background-color: #1f2937;
   color: #e5e7eb;
@@ -95,51 +86,91 @@ body {
 }
 
 /* ===============================
-   Messages
-=============================== */
-.message {
-  color: #9ca3af;
-  margin-top: 3rem;
-  font-size: 1.1rem;
-}
-
-/* ===============================
-   User Grid / Cards
+   User List / Full-width Pills
 =============================== */
 .user-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
   width: 100%;
   max-width: 1000px;
 }
 
 .user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* push delete button to far right */
   background-color: #161b22;
   border: 1px solid #1f2937;
-  border-radius: 16px;
-  padding: 1.5rem;
-  text-align: center;
+  border-radius: 50px;
+  padding: 0.8rem 1.6rem;
+  width: 100%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
   transition: all 0.25s ease;
 }
 
 .user-card:hover {
   border-color: #3b82f6;
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
-  transform: translateY(-3px);
+  background-color: #1e2530;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25);
+  transform: translateY(-2px);
+}
+
+.user-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
 }
 
 .avatar {
-  width: 60px;
-  height: 60px;
+  width: 42px;
+  height: 42px;
   background-color: #3b82f6;
   border-radius: 50%;
   color: white;
-  font-size: 1.6rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 0.8rem;
+  font-weight: 600;
+  margin-right: 1rem;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.user-info h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.user-info .date {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.delete-btn {
+  background-color: transparent;
+  color: #ef4444;
+  border: 1px solid #ef4444;
+  border-radius: 50px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  margin-left: 1rem;
+}
+
+.delete-btn:hover {
+  background-color: #ef4444;
+  color: white;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
 
 /* ===============================
