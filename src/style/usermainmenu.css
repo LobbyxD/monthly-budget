@@ -2,8 +2,9 @@
   background-color: var(--bg);
   color: var(--text);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
+  min-height: 100vh;
   padding: 2rem;
   font-family: "Inter", sans-serif;
 }
@@ -17,6 +18,7 @@
   width: 100%;
   text-align: center;
   animation: fadeIn 0.5s ease-in-out;
+  box-shadow: 0 4px 15px var(--shadow);
 }
 
 .user-menu-title {
@@ -33,31 +35,21 @@
   gap: 1.2rem;
 }
 
-/* Show button smoothly when card is hovered */
-/* Delete button — hidden by default */
-.delete-btn {
-  font-family: "Franklin Gothic Medium", "Arial Narrow", Arial, sans-serif;
-  font-weight: 500;
-  font-size: x-large;
+.menu-btn {
+  background-color: var(--accent);
   border: none;
-  border-radius: 8px;
-  padding: 0.7rem 1.4rem;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 10px;
+  padding: 0.8rem 1.2rem;
   cursor: pointer;
-  background-color: transparent;
-  color: var(--text);
-  opacity: 0;
-  transform: translateX(10px);
-  pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease, background-color 0.2s ease;
-} /* Show button smoothly when card is hovered */
-.user-card:hover .delete-btn {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: auto;
-} /* Hover effect for the button itself */
-.delete-btn:hover {
-  color: var(--delete);
-  transition: 0.3s;
+  transition: all 0.25s ease-in-out;
+}
+
+.menu-btn:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-2px);
 }
 
 @keyframes fadeIn {

@@ -45,7 +45,6 @@ export default function Settings() {
         <div className="panel-header">
           <h2>Settings</h2>
         </div>
-
         {/* DARK MODE TOGGLE */}
         <div className="setting-row">
           <div className="setting-info">
@@ -60,33 +59,6 @@ export default function Settings() {
             />
             <span className="slider"></span>
           </label>
-        </div>
-
-        {/* AVATAR COLOR PICKER */}
-        <div className="setting-row">
-          <div className="setting-info">
-            <h3>Avatar Color</h3>
-            <p>Click the icon to change color</p>
-          </div>
-
-          {/* Avatar acts as button */}
-          <div
-            className="avatar-color-button"
-            style={{ backgroundColor: avatarColor }}
-            onClick={openColorPicker}
-            title="Click to choose color"
-          >
-            R
-          </div>
-
-          {/* Hidden input for actual color picker */}
-          <input
-            type="color"
-            ref={colorInputRef}
-            value={avatarColor}
-            onChange={handleColorChange}
-            style={{ display: "none" }}
-          />
         </div>
       </div>
     </div>

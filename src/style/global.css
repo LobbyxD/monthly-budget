@@ -13,6 +13,7 @@
   --avatar-bg: #2563eb;
   --delete: #ef4444;
   --hover-bg: #f3f4f6;
+  --hover-row: #f3f4f6;
   --shadow: rgba(0, 0, 0, 0.1);
 }
 
@@ -28,6 +29,7 @@
   --avatar-bg: #3b82f6;
   --delete: #ef4444;
   --hover-bg: #1e2530;
+  --hover-row: #151e30;
   --shadow: rgba(0, 0, 0, 0.4);
 }
 
@@ -44,7 +46,8 @@ body {
   line-height: 1.5;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   overflow-y: hidden;
 }
