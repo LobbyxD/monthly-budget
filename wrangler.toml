@@ -1,0 +1,13 @@
+name = "monthlybudget"
+compatibility_date = "2025-10-01"
+
+account_id = "c98979552f42346f2b2eff79b84df623"  # Daniel’s account
+
+[pages]
+project_name = "monthlybudget"
+build_output_dir = "dist"
+
+[build]
+command = "npm run build"
+cwd = "."
+pages_build_output_dir = "dist"

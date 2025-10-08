@@ -526,3 +526,12 @@ input[type="number"] {
   background-color: transparent !important;
   cursor: default;
 }
+
+/* ===============================
+   Disabled input style
+=============================== */
+input[disabled]:hover {
+  background-color: var(--hover-row);
+  opacity: 0.6;
+  cursor: not-allowed;
+}

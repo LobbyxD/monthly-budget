@@ -1,8 +1,0 @@
-{
-  "name": "monthlybudget",
-  "main": "worker.js",
-  "compatibility_date": "2025-10-05",
-  "assets": {
-    "directory": "./dist"
-  }
-}

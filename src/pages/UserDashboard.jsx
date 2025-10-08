@@ -115,26 +115,34 @@ export default function UserDashboard() {
     const numValue = Number(String(newValue).replace(/,/g, "")) || 0;
     const startStr = `${year}-${String(month + 1).padStart(2, "0")}-10`;
 
-    const { data: existing } = await supabase
+    console.log("💾 Attempting to save salary:");
+    console.log({ uid, startStr, numValue });
+
+    const { data: existing, error: selectErr } = await supabase
       .from("monthly_summary")
       .select("*")
       .eq("user_id", uid)
-      .gte("month", startStr)
-      .lte("month", `${year}-${String(month + 2).padStart(2, "0")}-09`)
+      .eq("month", startStr)
       .maybeSingle();
 
+    if (selectErr) console.error("❌ Select error:", selectErr);
+    console.log("Existing record:", existing);
+
     if (existing) {
-      await supabase
+      const { error: updateErr } = await supabase
         .from("monthly_summary")
         .update({ salary_amount: numValue })
         .eq("id", existing.id);
+      console.log("🔁 Update result:", updateErr || "OK");
     } else {
-      await supabase
+      const { error: insertErr, data: insertData } = await supabase
         .from("monthly_summary")
-        .insert([{ user_id: uid, month: startStr, salary_amount: numValue }]);
+        .insert([{ user_id: uid, month: startStr, salary_amount: numValue }])
+        .select();
+      console.log("➕ Insert result:", insertErr || insertData);
     }
 
-    fetchAll();
+    await fetchAll();
   };
 
   const handleSalaryChange = (e) => {
@@ -204,7 +212,7 @@ export default function UserDashboard() {
   const handleBlur = async (id, field, value, row) => {
     if (isNonOriginal(row)) return;
 
-    // 🔸 Category/Description update -> propagate to installments
+    // 🔸 Category / Description update → propagate to installments
     if (field === "category" || field === "description") {
       await supabase
         .from("transactions")
@@ -214,7 +222,21 @@ export default function UserDashboard() {
       return;
     }
 
-    // 🔸 Budget update -> adjust spent = budget/payment (rounded)
+    // 🔸 Spent update → save directly (only for editable rows)
+    if (field === "spent") {
+      const spent = value === "" || value === null ? 0 : Number(value);
+
+      const { error } = await supabase
+        .from("transactions")
+        .update({ spent })
+        .eq("id", id);
+
+      if (error) console.error("❌ Spent update failed:", error.message);
+      else fetchAll();
+      return;
+    }
+
+    // 🔸 Budget update → adjust spent = budget/payment (rounded)
     if (field === "budget") {
       const budget = Number(value) || 0;
       const spent = Math.round(budget / (row.payment || 1));
@@ -223,15 +245,13 @@ export default function UserDashboard() {
         .from("transactions")
         .update({ budget, spent })
         .eq("id", id);
-
-      // update children spent
       await supabase.from("transactions").update({ spent }).eq("parent_id", id);
 
       fetchAll();
       return;
     }
 
-    // 🔸 Payment update -> recreate installments
+    // 🔸 Payment update → recreate installments
     if (field === "payment") {
       const payments = Math.max(1, Math.floor(Number(value) || 1));
       if (!row.budget || payments < 1) {
@@ -322,18 +342,27 @@ export default function UserDashboard() {
   }, 0);
 
   const totalBudget = transactions.reduce((sum, t) => {
-    const isOriginal = !t.parent_id && t.total_installments > 1;
-    const val = isOriginal
-      ? Math.round(t.budget / t.total_installments)
-      : t.spent;
+    // Skip income rows entirely
+    if (t.type === "income") return sum;
 
-    return t.type === "income" ? sum : sum + val;
+    // If it's an installment parent or a non-original child, use spent instead of budget
+    const isInstallmentParent =
+      !t.parent_id && (t.payment > 1 || t.total_installments > 1);
+    const isChild = t.parent_id !== null;
+
+    const value =
+      isInstallmentParent || isChild
+        ? Number(t.spent || 0)
+        : Number(t.budget || 0);
+
+    return sum + value;
   }, 0);
 
-  const diff = Number(salary || 0) - totalBudget;
+  const diff =
+    Number(salary || 0) - (totalBudget > totalSpent ? totalBudget : totalSpent);
   const diffColor = diff >= 0 ? "#22c55e" : "#ef4444";
   const getColorByRatio = (spent, budget) => {
-    if (budget === 0) return "var(--text)";
+    if (budget === 0 || !budget) return "var(--text)";
     const ratio = spent / budget;
     if (ratio > 1) return "#ef4444";
     if (ratio > 0.8) return "#facc15";
@@ -471,7 +500,7 @@ export default function UserDashboard() {
                   <tr key={t.id}>
                     <td>
                       <input
-                        className={`editable ${getCellClass(t, "category")}`}
+                        className="editable"
                         value={t.category || ""}
                         onChange={(e) =>
                           handleChange(t.id, "category", e.target.value)
@@ -490,15 +519,22 @@ export default function UserDashboard() {
                     <td style={{ color: getColorByRatio(t.spent, t.budget) }}>
                       <input
                         type="number"
-                        className={`editable ${getCellClass(t, "spent")}`}
-                        value={t.spent || ""}
-                        disabled
+                        className="editable"
+                        value={t.spent ?? ""}
+                        onChange={(e) =>
+                          handleChange(t.id, "spent", e.target.value)
+                        }
+                        onBlur={(e) =>
+                          handleBlur(t.id, "spent", e.target.value, t)
+                        }
+                        disabled={t.payment > 1 || t.parent_id !== null}
                       />
                     </td>
+
                     <td>
                       <input
                         type="number"
-                        className={`editable ${getCellClass(t, "budget")}`}
+                        className="editable"
                         value={t.budget || ""}
                         onChange={(e) =>
                           handleChange(t.id, "budget", e.target.value)
@@ -548,7 +584,7 @@ export default function UserDashboard() {
                     <td>
                       <input
                         type="number"
-                        className={`editable ${getCellClass(t, "payment")}`}
+                        className="editable"
                         value={t.payment || ""}
                         onChange={(e) =>
                           handleChange(t.id, "payment", e.target.value)
@@ -561,7 +597,7 @@ export default function UserDashboard() {
                     </td>
                     <td>
                       <input
-                        className={`editable ${getCellClass(t, "description")}`}
+                        className="editable"
                         value={t.description || ""}
                         onChange={(e) =>
                           handleChange(t.id, "description", e.target.value)
