@@ -1,40 +1,69 @@
-import { useEffect, useState, useRef } from "react"; // ⬅ added useRef
+import { useEffect, useState, FormEvent, JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-// MainMenu.jsx
 import "../style/global.css";
 import "../style/mainmenu.css";
 import { HexColorPicker } from "react-colorful";
 
-export default function MainMenu() {
-  const [users, setUsers] = useState([]);
+/* -----------------------------
+   🧩 Supabase table definition
+------------------------------*/
+interface DBUser {
+  id: number;
+  firstName: string;
+  lastName?: string | null;
+  fav_color?: string | null;
+}
+
+export default function MainMenu(): JSX.Element {
+  const [users, setUsers] = useState<DBUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
-  const [deletingId, setDeletingId] = useState(null);
-  const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<DBUser | null>(
+    null
+  );
   const [errorMsg, setErrorMsg] = useState("");
-  const navigate = useNavigate();
-  // ✨ Color edit state (custom picker)
-  const [selectedUserForColor, setSelectedUserForColor] = useState(null);
-  const [colorPreview, setColorPreview] = useState(null); // {id, value} live preview
-  const [colorDraft, setColorDraft] = useState("#3b82f6"); // local draft in modal
+  const [selectedUserForColor, setSelectedUserForColor] =
+    useState<DBUser | null>(null);
+  const [colorPreview, setColorPreview] = useState<{
+    id: number;
+    value: string;
+  } | null>(null);
+  const [colorDraft, setColorDraft] = useState("#3b82f6");
   const [showColorModal, setShowColorModal] = useState(false);
   const [savingColor, setSavingColor] = useState(false);
 
+  const navigate = useNavigate();
+
+  /* -----------------------------
+     🔹 Fetch users
+  ------------------------------*/
   const fetchUsers = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("users")
       .select("*")
       .order("id");
-    if (error) console.error("Error fetching users:", error);
-    else setUsers(data || []);
+
+    if (error) {
+      console.error("Error fetching users:", error);
+      setUsers([]);
+    } else {
+      setUsers((data as DBUser[]) ?? []);
+    }
+
     setLoading(false);
   };
 
+  /* -----------------------------
+     🔄 Realtime subscription
+  ------------------------------*/
   useEffect(() => {
     fetchUsers();
+
     const channel = supabase
       .channel("public:users")
       .on(
@@ -43,34 +72,34 @@ export default function MainMenu() {
         fetchUsers
       )
       .subscribe();
-    return () => supabase.removeChannel(channel);
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   /* -----------------------------
-     Color Picker: Open / Preview
+     🎨 Color Picker
   ------------------------------*/
-  const openColorPicker = (e, user) => {
+  const openColorPicker = (e: React.MouseEvent, user: DBUser) => {
     e.stopPropagation();
     const initial = user.fav_color || "#3b82f6";
     setSelectedUserForColor(user);
-    setColorDraft(initial); // local working color
-    setColorPreview({ id: user.id, value: initial }); // start preview at current
-    setShowColorModal(true); // show our modal
+    setColorDraft(initial);
+    setColorPreview({ id: user.id, value: initial });
+    setShowColorModal(true);
   };
 
-  // Live preview as the user moves the picker — no DB writes
-  const handleDraftChange = (input) => {
-    // input can be either a string (from HexColorPicker) or an event (from input field)
+  const handleDraftChange = (
+    input: string | React.ChangeEvent<HTMLInputElement>
+  ) => {
     const value = typeof input === "string" ? input : input.target.value;
-
     setColorDraft(value);
-
     if (selectedUserForColor) {
       setColorPreview({ id: selectedUserForColor.id, value });
     }
   };
 
-  // Cancel: close + revert preview (no DB write)
   const cancelColorPicker = () => {
     setShowColorModal(false);
     setColorPreview(null);
@@ -79,14 +108,12 @@ export default function MainMenu() {
     setSavingColor(false);
   };
 
-  // OK: write to DB and finalize preview
   const confirmColorPicker = async () => {
     if (!selectedUserForColor) return;
     const userId = selectedUserForColor.id;
     const newColor = colorDraft;
     const original = selectedUserForColor.fav_color || "#3b82f6";
 
-    // nothing changed
     if (newColor === original) {
       cancelColorPicker();
       return;
@@ -100,52 +127,51 @@ export default function MainMenu() {
         .eq("id", userId);
       if (error) throw error;
 
-      // reflect in local state
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, fav_color: newColor } : u))
       );
-    } catch (err) {
+    } catch (err: any) {
       console.error("Failed to update color:", err.message);
     } finally {
       setSavingColor(false);
-      setShowColorModal(false);
-      setColorPreview(null);
-      setSelectedUserForColor(null);
+      cancelColorPicker();
     }
   };
 
   /* -----------------------------
-     Create / Delete user … (unchanged)
+     👤 Create / Delete user
   ------------------------------*/
-
-  const handleCreateUser = async (e) => {
+  const handleCreateUser = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg("");
 
-    const username = newUsername.trim();
-    if (!username) {
-      setErrorMsg("Please enter a username.");
+    const first = newFirstName.trim();
+    const last = newLastName.trim();
+
+    if (!first) {
+      setErrorMsg("Please enter a first name.");
       return;
     }
 
-    // 🔹 Check case-insensitive existence
     const { data: existingUser, error: checkErr } = await supabase
       .from("users")
       .select("id")
-      .ilike("username", username);
+      .ilike("firstName", first);
 
     if (checkErr) {
       console.error("Error checking user:", checkErr.message);
-      setErrorMsg("Unable to verify username. Please try again.");
+      setErrorMsg("Unable to verify user. Please try again.");
       return;
     }
 
     if (existingUser && existingUser.length > 0) {
-      setErrorMsg("This username already exists.");
+      setErrorMsg("A user with this first name already exists.");
       return;
     }
 
-    const { error } = await supabase.from("users").insert([{ username }]);
+    const { error } = await supabase
+      .from("users")
+      .insert([{ firstName: first, lastName: last || null }]);
 
     if (error) {
       console.error(error.message);
@@ -153,16 +179,16 @@ export default function MainMenu() {
       return;
     }
 
-    // ✅ Success — close cleanly
     setShowModal(false);
-    setNewUsername("");
+    setNewFirstName("");
+    setNewLastName("");
     setErrorMsg("");
   };
 
-  const handleDelete = (id, e) => {
+  const handleDelete = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
-    const user = users.find((u) => u.id === id);
-    setConfirmDeleteUser(user); // open custom confirmation modal
+    const user = users.find((u) => u.id === id) || null;
+    setConfirmDeleteUser(user);
   };
 
   const confirmDelete = async () => {
@@ -170,42 +196,45 @@ export default function MainMenu() {
 
     setDeletingId(confirmDeleteUser.id);
     setConfirmDeleteUser(null);
-
     setUsers((prev) => prev.filter((u) => u.id !== confirmDeleteUser.id));
 
     const { error } = await supabase
       .from("users")
       .delete()
       .eq("id", confirmDeleteUser.id);
-
     if (error) alert(error.message);
+
     setDeletingId(null);
   };
 
-  // open modal (reset fields)
   const openCreateModal = () => {
-    setNewUsername("");
+    setNewFirstName("");
+    setNewLastName("");
     setErrorMsg("");
     setShowModal(true);
   };
 
-  // cancel button handler
   const handleCancelCreate = () => {
     setShowModal(false);
-    setNewUsername("");
+    setNewFirstName("");
+    setNewLastName("");
     setErrorMsg("");
   };
 
+  /* -----------------------------
+     🧱 Render
+  ------------------------------*/
   return (
     <div className="page">
       <div className="panel">
         <div className="panel-header">
           <h2>Household Members</h2>
-          <button className="create-btn" onClick={() => setShowModal(true)}>
+          <button className="create-btn" onClick={openCreateModal}>
             + Create
           </button>
         </div>
 
+        {/* Delete modal */}
         {confirmDeleteUser && (
           <div className="modal-overlay">
             <div className="modal">
@@ -213,7 +242,7 @@ export default function MainMenu() {
               <p style={{ marginBottom: "1.4rem", color: "var(--muted-text)" }}>
                 Are you sure you want to delete{" "}
                 <strong style={{ color: "var(--text)" }}>
-                  {confirmDeleteUser.username}
+                  {confirmDeleteUser.firstName} {confirmDeleteUser.lastName}
                 </strong>
                 ? This action cannot be undone.
               </p>
@@ -235,6 +264,7 @@ export default function MainMenu() {
           </div>
         )}
 
+        {/* User list */}
         {loading ? (
           <p className="message">Loading users...</p>
         ) : users.length === 0 ? (
@@ -247,7 +277,10 @@ export default function MainMenu() {
                 className="user-card clickable"
                 onClick={() =>
                   navigate(`/user/${user.id}`, {
-                    state: { username: user.username },
+                    state: {
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                    },
                   })
                 }
               >
@@ -264,10 +297,12 @@ export default function MainMenu() {
                     onClick={(e) => openColorPicker(e, user)}
                     title="Click to edit color"
                   >
-                    {user.username?.[0]?.toUpperCase() || "?"}
+                    {(user.firstName?.[0] || "").toUpperCase()}
+                    {(user.lastName?.[0] || "").toUpperCase()}
                   </div>
-
-                  <h2>{user.username}</h2>
+                  <h2>
+                    {user.firstName} {user.lastName}
+                  </h2>
                 </div>
 
                 <button
@@ -282,6 +317,8 @@ export default function MainMenu() {
           </div>
         )}
       </div>
+
+      {/* Create user modal */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -289,13 +326,21 @@ export default function MainMenu() {
             <form onSubmit={handleCreateUser}>
               <input
                 type="text"
-                placeholder="Enter username..."
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="First name..."
+                value={newFirstName}
+                onChange={(e) => setNewFirstName(e.target.value)}
                 className={errorMsg ? "input-error" : ""}
+                required
+              />
+              <input
+                type="text"
+                placeholder="Last name..."
+                value={newLastName}
+                onChange={(e) => setNewLastName(e.target.value)}
+                className={errorMsg ? "input-error" : ""}
+                required
               />
               {errorMsg && <p className="error-text">{errorMsg}</p>}
-
               <div className="modal-actions">
                 <button type="button" onClick={handleCancelCreate}>
                   Cancel
@@ -306,23 +351,23 @@ export default function MainMenu() {
           </div>
         </div>
       )}
-      {/* 🎨 Our custom Color Picker Modal */}
+
+      {/* 🎨 Color picker modal */}
       {showColorModal && selectedUserForColor && (
         <div className="modal-overlay" onClick={cancelColorPicker}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h2>Edit Avatar Color</h2>
-
             <div className="color-picker-top">
               <div
                 className="avatar color-preview-avatar"
                 style={{ backgroundColor: colorDraft }}
               >
-                {selectedUserForColor.username?.[0]?.toUpperCase() || "?"}
+                {(selectedUserForColor.firstName?.[0] || "").toUpperCase()}
+                {(selectedUserForColor.lastName?.[0] || "").toUpperCase()}
               </div>
 
               <div className="color-picker-panel">
                 <div className="color-picker-inner">
-                  {/* 🎨 Vertical Swatches */}
                   <div className="color-swatches-vertical">
                     {[
                       "#3b82f6",
@@ -355,13 +400,11 @@ export default function MainMenu() {
                     ))}
                   </div>
 
-                  {/* 🎛 Actual color picker */}
                   <div className="picker-column">
                     <HexColorPicker
                       color={colorDraft}
                       onChange={handleDraftChange}
                     />
-
                     <input
                       type="text"
                       value={colorDraft}

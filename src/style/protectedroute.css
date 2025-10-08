@@ -1,0 +1,33 @@
+/* src/components/ProtectedRoute.css */
+
+/* Centered full-screen loader */
+.protected-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: 100vw;
+  height: 100vh;
+
+  color: var(--text);
+  background-color: var(--bg);
+  font-size: 1.1rem;
+  gap: 1rem;
+}
+
+/* Simple animated spinner */
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

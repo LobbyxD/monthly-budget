@@ -82,6 +82,10 @@ body {
   justify-content: center;
   transition: transform var(--dur-slow) var(--easing);
   box-shadow: none;
+  width: 100%;
+  max-width: 340px; /* Adjust to your preferred width */
+  min-width: 340px; /* Prevent shrinkage when validation text shows */
+  box-sizing: border-box;
 }
 
 .login-card.front {
@@ -89,6 +93,10 @@ body {
 }
 .login-card.back {
   transform: rotateY(180deg);
+}
+
+.login-card.back form .btn.btn-primary {
+  margin-top: 1.5rem; /* ≈16px spacing between strength bar and button */
 }
 
 .login-card-container.flipped .front {
@@ -130,9 +138,15 @@ input:focus-visible {
   border-color: var(--danger);
 }
 .field-error {
-  margin-top: var(--space-1);
   color: var(--danger);
   font-size: 0.9rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 3.8rem; /* ensures the card doesn't resize when error appears */
 }
 
 /* =========================
@@ -179,6 +193,7 @@ input:focus-visible {
   background-color: var(--accent);
   color: #fff;
 }
+
 .btn-primary:hover:not(:disabled) {
   background-color: var(--accent-hover);
 }
@@ -359,4 +374,19 @@ input:focus-visible {
 .eye-btn:focus-visible {
   outline: 0.125rem solid var(--accent);
   outline-offset: 0.125rem;
+}
+
+.modal-overlay .modal {
+  animation: slideFadeIn 0.3s ease;
+}
+
+@keyframes slideFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
