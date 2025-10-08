@@ -358,9 +358,10 @@ export default function UserDashboard() {
     return sum + value;
   }, 0);
 
-  const diff =
-    Number(salary || 0) - (totalBudget > totalSpent ? totalBudget : totalSpent);
-  const diffColor = diff >= 0 ? "#22c55e" : "#ef4444";
+  const diffExpected = Number(salary || 0) - totalBudget;
+  const diffActual = Number(salary || 0) - totalSpent;
+  const diffColorExpected = diffExpected >= 0 ? "#22c55e" : "#ef4444";
+  const diffColorActual = diffActual >= 0 ? "#22c55e" : "#ef4444";
   const getColorByRatio = (spent, budget) => {
     if (budget === 0 || !budget) return "var(--text)";
     const ratio = spent / budget;
@@ -454,7 +455,7 @@ export default function UserDashboard() {
                 onBlur={handleSalaryBlur}
                 onFocus={(e) => e.target.select()}
               />
-              ₪<span ref={mirrorRef} className="salary-mirror"></span>
+              &nbsp;₪<span ref={mirrorRef} className="salary-mirror"></span>
             </span>
           </div>
         </div>
@@ -627,16 +628,25 @@ export default function UserDashboard() {
                     <b>Total</b>
                   </td>
                   <td>
-                    <b>{totalSpent}₪</b>
+                    <b>{totalSpent.toLocaleString()}₪</b>
                   </td>
                   <td>
-                    <b>{totalBudget}₪</b>
+                    <b>{totalBudget.toLocaleString()}₪</b>
                   </td>
-                  <td
-                    colSpan="3"
-                    style={{ color: diffColor, textAlign: "right" }}
-                  >
-                    {diff >= 0 ? `${diff}₪` : `- ${Math.abs(diff)}₪`}
+                  <td colSpan="3" style={{ textAlign: "right" }}>
+                    <span style={{ color: "var(--text)" }}>Expected: </span>
+                    <span style={{ color: diffColorExpected }}>
+                      {diffExpected >= 0
+                        ? `${diffExpected.toLocaleString()}₪`
+                        : `- ${Math.abs(diffExpected).toLocaleString()}₪`}
+                    </span>
+                    <span style={{ color: "#374469ff" }}> | </span>
+                    <span style={{ color: "var(--text)" }}>Actual: </span>
+                    <span style={{ color: diffColorActual }}>
+                      {diffActual >= 0
+                        ? `${diffActual.toLocaleString()}₪`
+                        : `- ${Math.abs(diffActual).toLocaleString()}₪`}
+                    </span>
                   </td>
                   <td></td>
                 </tr>
