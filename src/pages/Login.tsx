@@ -107,9 +107,14 @@ export default function Login() {
   /* -----------------------------
      ☁️ Handle Google OAuth redirect
   ------------------------------*/
+  const [checkingGoogleUser, setCheckingGoogleUser] = useState(true);
+
   useEffect(() => {
     const checkUser = async () => {
-      if (!user) return;
+      if (!user) {
+        setCheckingGoogleUser(false);
+        return;
+      }
 
       const { data, error } = await supabase
         .from("users")
@@ -117,19 +122,24 @@ export default function Login() {
         .eq("auth_id", user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Error checking user:", error.message);
-        return;
-      }
+      if (error) console.error(error.message);
 
-      // Show modal if no user record OR if first/last name missing
       if (!data || !data.firstName?.trim() || !data.lastName?.trim()) {
         setShowGoogleModal(true);
+      } else {
+        navigate("/", { replace: true });
       }
+
+      setCheckingGoogleUser(false);
     };
 
     checkUser();
-  }, [user]);
+  }, [user, navigate]);
+
+  // Add this near return()
+  if (checkingGoogleUser) {
+    return <div className="page center">Loading...</div>;
+  }
 
   async function handleGoogleModalConfirm() {
     if (!googleFirstName.trim() || !googleLastName.trim()) {
