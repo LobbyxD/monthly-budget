@@ -114,3 +114,30 @@
 .dropdown-item.logout:hover {
   background: color-mix(in oklab, var(--delete) 12%, transparent);
 }
+
+/* ===== BRAND / TITLE ===== */
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+
+.brand-logo {
+  width: 1.8rem; /* roughly 28–30px, scalable with font size */
+  height: auto;
+  border-radius: 0.4rem;
+  display: block;
+}
+
+.brand-text {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.brand-link:hover .brand-text {
+  color: var(--accent-hover);
+  transition: color 0.2s ease;
+}

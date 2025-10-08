@@ -77,7 +77,14 @@ export default function Layout(): JSX.Element {
       <header className="app-header">
         <div className="header-inner">
           <div className="app-title">
-            <Link to="/">BudgetMe</Link>
+            <Link to="/" className="brand-link">
+              <img
+                src="/assets/logo.png"
+                alt="BudgetMe Logo"
+                className="brand-logo"
+              />
+              <span className="brand-text">BudgetMe</span>
+            </Link>
           </div>
 
           <div className="user-menu" ref={menuRef}>
