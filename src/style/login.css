@@ -1,0 +1,362 @@
+/* =========================
+   Design tokens / base
+   ========================= */
+:root {
+  /* Colors */
+  --bg: #0d1117;
+  --surface: #111827;
+  --muted-surface: #0f172a;
+  --text: #e5e7eb;
+  --border: #1f2937;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --disabled: #334155;
+  --link: #3b82f6;
+  --muted-text: #94a3b8;
+  --strength-empty: #1e293b;
+  --strength-full: #22c55e;
+  --danger: #f87171;
+  --btn-py: 0.625rem; /* vertical padding ~10 */
+  --btn-px: 0.75rem; /* horizontal padding ~12 */
+  --btn-line: 1.2; /* compact line-height */
+  --icon-size: 1.125rem; /* ~18 */
+
+  /* Spacing / radius (4px grid) */
+  --space-1: 0.25rem; /* ~4  */
+  --space-2: 0.5rem; /* ~8  */
+  --space-2_5: 0.625rem; /* ~10 */
+  --space-3: 0.75rem; /* ~12 */
+  --space-4: 1rem; /* ~16 */
+  --radius-1: 0.125rem; /* ~2  */
+  --radius-2: 0.5rem; /* ~8  */
+  --radius-card: 1.125rem; /* ~18 */
+
+  /* Motion */
+  --easing: cubic-bezier(0.4, 0.2, 0.2, 1);
+  --dur-fast: 150ms;
+  --dur-slow: 800ms;
+
+  /* Font */
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+    "Segoe UI Emoji";
+}
+
+html,
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================
+   Layout / Card
+   ========================= */
+.page.center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100svh;
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+.login-card-container {
+  perspective: 75rem; /* ~1200 */
+  width: min(92vw, 22.5rem); /* <= 360 */
+  height: clamp(22rem, 60svh, 27.5rem); /* responsive height */
+  position: relative;
+}
+
+.login-card {
+  position: absolute;
+  inset: 0;
+  width: fit-content;
+  height: fit-content;
+  backface-visibility: hidden;
+  background-color: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 1.75rem; /* ~28 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: transform var(--dur-slow) var(--easing);
+  box-shadow: none;
+}
+
+.login-card.front {
+  transform: rotateY(0deg);
+}
+.login-card.back {
+  transform: rotateY(180deg);
+}
+
+.login-card-container.flipped .front {
+  transform: rotateY(-180deg);
+}
+.login-card-container.flipped .back {
+  transform: rotateY(0deg);
+}
+
+/* Respect user motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .login-card {
+    transition: none;
+  }
+}
+
+/* =========================
+   Inputs
+   ========================= */
+input {
+  margin: var(--space-2) 0;
+  padding: var(--space-2_5) var(--space-3);
+  width: 100%;
+  background-color: var(--muted-surface);
+  color: var(--text);
+  border: 0.0625rem solid var(--border); /* ~1 */
+  border-radius: var(--radius-2);
+  font-size: 1rem;
+}
+
+input:focus-visible {
+  outline: 0.125rem solid var(--accent); /* fallback */
+  outline: 0.125rem solid color-mix(in oklab, var(--accent) 60%, white);
+  outline-offset: 0.125rem;
+}
+
+/* Inline validation for email */
+.input-invalid {
+  border-color: var(--danger);
+}
+.field-error {
+  margin-top: var(--space-1);
+  color: var(--danger);
+  font-size: 0.9rem;
+}
+
+/* =========================
+   Actions (primary row + google)
+   ========================= */
+.actions-row {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.btn {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5ch;
+  font: inherit;
+  font-weight: 600;
+  line-height: var(--btn-line);
+  padding-block: var(--btn-py);
+  padding-inline: var(--btn-px);
+  border: 0;
+  border-radius: var(--radius-2);
+  cursor: pointer;
+  flex: 1 1 0; /* keeps 50/50 split in the row */
+  width: 100%;
+  transition: background-color var(--dur-fast) ease,
+    box-shadow var(--dur-fast) ease;
+}
+
+/* Only the two inline actions should flex to split the row */
+.actions-row > .btn {
+  flex: 1 1 0;
+  width: 100%;
+}
+
+.btn:disabled {
+  background-color: var(--disabled);
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  color: #fff;
+}
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+}
+.btn-primary:focus-visible {
+  outline: 0.125rem solid var(--accent);
+  outline: 0.125rem solid color-mix(in oklab, var(--accent) 70%, white);
+  outline-offset: 0.125rem;
+}
+
+.btn-secondary {
+  background-color: transparent;
+  color: var(--accent);
+  border: 0.0625rem solid var(--accent); /* ~1 */
+}
+.btn-secondary:hover:not(:disabled) {
+  background-color: color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.btn-secondary:focus-visible {
+  outline: 0.125rem solid var(--accent);
+  outline: 0.125rem solid color-mix(in oklab, var(--accent) 70%, white);
+  outline-offset: 0.125rem;
+}
+
+/* Google button: only layout overrides; styling comes from btn/btn-primary */
+.oauth-btn.google {
+  display: block;
+  width: 100%;
+  max-height: fit-content;
+  margin-top: var(--space-3);
+}
+
+/* Divider between actions (hr) */
+.oauth-divider {
+  border: 0;
+  height: 0.0625rem; /* ~1 */
+  width: 100%;
+  background-color: color-mix(in oklab, var(--border) 70%, transparent);
+  margin: var(--space-4) 0;
+  display: block;
+}
+
+/* =========================
+   Password field + eye toggle
+   ========================= */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.password-wrapper input {
+  padding-right: 2.25rem;
+}
+
+.eye-btn {
+  position: absolute;
+  right: var(--space-3);
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted-text);
+  cursor: pointer;
+  padding: 0;
+}
+.eye-btn:focus-visible {
+  outline: 0.125rem solid var(--accent);
+  outline-offset: 0.125rem;
+}
+
+/* =========================
+   Strength bar
+   ========================= */
+.strength-bar {
+  display: flex;
+  gap: var(--space-1);
+  margin: var(--space-2) 0;
+}
+.strength-bar span {
+  flex: 1;
+  height: 0.3125rem; /* ~5 */
+  border-radius: var(--radius-1);
+  background-color: var(--strength-empty);
+  transition: background-color var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
+  transform-origin: center bottom;
+}
+
+/* color/animate by strength level (single source of truth) */
+.strength-1 .filled {
+  background-color: #ef4444;
+} /* red-500   */
+.strength-2 .filled {
+  background-color: #f59e0b;
+} /* amber-500 */
+.strength-3 .filled {
+  background-color: #22c55e;
+} /* green-500 */
+.strength-4 .filled {
+  background: linear-gradient(90deg, #22c55e 0%, #14b8a6 100%);
+}
+
+/* subtle lift for any filled segment */
+.strength-bar .filled {
+  transform: scaleY(1.08);
+}
+
+/* =========================
+   Links / helper text
+   ========================= */
+.login-error {
+  color: var(--danger);
+}
+
+.link-btn,
+.link-inline {
+  background: none;
+  border: none;
+  color: var(--link);
+  cursor: pointer;
+  padding: 0;
+}
+.link-btn:hover,
+.link-inline:hover {
+  text-decoration: underline;
+}
+.link-inline:focus-visible {
+  outline: 0.125rem solid var(--accent);
+  outline-offset: 0.125rem;
+}
+
+/* =========================
+   Eye
+   ========================= */
+
+.eye-btn {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  display: grid;
+  place-items: center;
+  padding: 0;
+  user-select: none;
+}
+
+/* stack the two icons inside the button */
+.eye-btn .eye {
+  grid-area: 1 / 1; /* stack */
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: var(--muted-text);
+  stroke-width: 1.5;
+  transition: opacity var(--dur-fast) var(--easing),
+    transform var(--dur-fast) var(--easing),
+    stroke var(--dur-fast) var(--easing);
+}
+
+/* default state: password hidden => show CLOSED eye */
+.eye-btn.is-closed .eye-open {
+  opacity: 0;
+  transform: scale(0.9) rotate(-5deg);
+}
+.eye-btn.is-closed .eye-closed {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+/* pressed/visible state: show OPEN eye */
+.eye-btn.is-open .eye-open {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+.eye-btn.is-open .eye-closed {
+  opacity: 0;
+  transform: scale(0.9) rotate(5deg);
+}
+
+/* focus ring stays consistent with the rest of the UI */
+.eye-btn:focus-visible {
+  outline: 0.125rem solid var(--accent);
+  outline-offset: 0.125rem;
+}
