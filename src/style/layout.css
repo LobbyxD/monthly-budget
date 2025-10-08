@@ -59,10 +59,10 @@
 }
 
 .user-menu-toggle {
-  background: var(--panel-bg);
+  background: var(--header-bg);
   color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: none;
+  border-radius: 1rem;
   padding: 0.5rem 1rem;
   cursor: pointer;
   display: flex;
@@ -85,9 +85,6 @@
   right: 0;
   top: 120%;
   background: var(--panel-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 4px 10px var(--shadow);
   min-width: 160px;
   padding: 0.4rem 0;
   z-index: 100;
