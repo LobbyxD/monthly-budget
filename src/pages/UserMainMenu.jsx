@@ -1,17 +1,21 @@
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+// src/pages/UserMainMenu.jsx
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "../style/global.css";
 import "../style/usermainmenu.css";
 
 export default function UserMainMenu() {
   const navigate = useNavigate();
-  const { id } = useParams();
   const location = useLocation();
-  const username = location.state?.username || "User";
+  const { user } = useAuth();
+
+  const username =
+    location.state?.username || user?.user_metadata?.firstName || "User";
 
   const buttons = [
-    { label: "Current Month", path: `/user/${id}/dashboard` },
-    { label: "Last Month", path: `/user/${id}/last-month` },
-    { label: "Archive", path: `/user/${id}/archive` },
+    { label: "Current Month", path: "/dashboard" },
+    { label: "Last Month", path: "/dashboard?month=last" },
+    { label: "Archive", path: "/dashboard?view=archive" },
     { label: "Settings", path: "/settings" },
     { label: "Return to Main Menu", path: "/" },
   ];

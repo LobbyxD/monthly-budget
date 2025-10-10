@@ -1,4 +1,10 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+// src/App.tsx
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import Layout from "./layout/Layout";
 import MainMenu from "./pages/MainMenu";
 import UserDashboard from "./pages/UserDashboard";
@@ -17,7 +23,10 @@ export default function App(): JSX.Element {
           {/* Public route */}
           <Route path="/login" element={<Login />} />
 
-          {/* Layout persists across all protected routes */}
+          {/* Catch any “/#” style route and redirect it */}
+          <Route path="/#" element={<Navigate to="/" replace />} />
+
+          {/* Protected routes */}
           <Route element={<Layout />}>
             <Route
               index
@@ -27,14 +36,26 @@ export default function App(): JSX.Element {
                 </ProtectedRoute>
               }
             />
+
             <Route
-              path="/user/:id"
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <UserDashboard />
                 </ProtectedRoute>
               }
             />
+
+            {/* Private dashboard by public_id */}
+            <Route
+              path="/user/:public_id"
+              element={
+                <ProtectedRoute>
+                  <UserDashboard />
+                </ProtectedRoute>
+              }
+            />
+
             <Route
               path="/settings"
               element={
@@ -43,6 +64,9 @@ export default function App(): JSX.Element {
                 </ProtectedRoute>
               }
             />
+
+            {/* Fallback for undefined routes */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </Router>

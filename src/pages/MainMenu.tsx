@@ -13,6 +13,7 @@ interface DBUser {
   firstName: string;
   lastName?: string | null;
   fav_color?: string | null;
+  public_id?: string | null;
 }
 
 export default function MainMenu(): JSX.Element {
@@ -275,14 +276,38 @@ export default function MainMenu(): JSX.Element {
               <div
                 key={user.id}
                 className="user-card clickable"
-                onClick={() =>
-                  navigate(`/user/${user.id}`, {
-                    state: {
-                      firstName: user.firstName,
-                      lastName: user.lastName,
-                    },
-                  })
-                }
+                onClick={async () => {
+                  try {
+                    if (user.public_id) {
+                      // ✅ Already has public_id from the initial SELECT *
+                      navigate(`/user/${user.public_id}`);
+                      return;
+                    }
+
+                    // 🩵 Fallback: fetch it manually if not present (for legacy users)
+                    const { data, error } = await supabase
+                      .from("users")
+                      .select("public_id")
+                      .eq("id", user.id)
+                      .maybeSingle();
+
+                    if (error) {
+                      console.error(
+                        "❌ Failed to fetch public_id:",
+                        error.message
+                      );
+                      return;
+                    }
+
+                    if (data?.public_id) {
+                      navigate(`/user/${data.public_id}`);
+                    } else {
+                      console.warn("⚠️ No public_id found for user:", user.id);
+                    }
+                  } catch (err) {
+                    console.error("❌ Navigation error:", err);
+                  }
+                }}
               >
                 <div className="user-left">
                   <div

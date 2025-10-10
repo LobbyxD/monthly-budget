@@ -109,18 +109,71 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      // Clear React state first
+      setUser(null);
+      setSession(null);
+
+      // Check if Supabase has a session
+      const { data } = await supabase.auth.getSession();
+
+      if (data.session) {
+        // ✅ Normal path: valid session exists
+        const { error } = await supabase.auth.signOut();
+        if (error) throw error;
+        console.log("[AuthContext] Logged out cleanly via Supabase");
+      } else {
+        // ⚠️ Edge path: Supabase lost the session
+        console.warn(
+          "[AuthContext] No active session, clearing localStorage manually"
+        );
+
+        // Manually purge persisted Supabase auth keys
+        for (const key in localStorage) {
+          if (key.includes("supabase") || key.includes("budgetme.auth")) {
+            localStorage.removeItem(key);
+          }
+        }
+
+        sessionStorage.clear();
+      }
+
+      // Optional: reload the page to guarantee fresh state
+      window.location.href = "/login";
+    } catch (err) {
+      console.error("[AuthContext] signOut failed:", err);
+      // Fallback: hard clear just in case
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = "/login";
+    }
   }
 
   async function signInWithGoogle() {
-    const { error } = await supabase.auth.signInWithOAuth({
+    const redirectUrl =
+      import.meta.env.MODE === "development"
+        ? "http://localhost:5173/login"
+        : "https://lobbyx3.com/login";
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/login`,
+        redirectTo: redirectUrl,
+        queryParams: {
+          prompt: "select_account",
+          access_type: "offline",
+          // ✅ Remove manual code_challenge fields
+          response_mode: "query", // ✅ still use query params instead of hash
+        },
       },
     });
-    if (error) throw error;
+
+    if (error) {
+      console.error("[AuthContext] Google sign-in failed:", error.message);
+      throw error;
+    } else {
+      console.log("[AuthContext] Redirecting to Google login...");
+    }
   }
 
   return (

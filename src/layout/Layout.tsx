@@ -12,7 +12,7 @@ interface UserProfile {
 }
 
 export default function Layout(): JSX.Element {
-  const { user, signOut } = useAuth();
+  const { user, signOut, session } = useAuth();
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -31,37 +31,46 @@ export default function Layout(): JSX.Element {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // ✅ Fetch user's first name via auth_id
+  // ✅ Fetch user's first name once user + session exist
   useEffect(() => {
-    if (!user?.id) {
-      setProfile(null);
-      setLoadingProfile(false);
-      return;
-    }
+    if (!user?.id) return; // wait until user is fully ready
 
     const loadProfile = async () => {
-      setLoadingProfile(true);
-      const { data, error } = await supabase
-        .from("users")
-        .select("firstName, lastName")
-        .eq("auth_id", user.id)
-        .maybeSingle();
+      try {
+        setLoadingProfile(true);
+        const { data, error } = await supabase
+          .from("users")
+          .select("firstName, lastName")
+          .eq("auth_id", String(user.id)) // ensure type-safe UUID string
+          .maybeSingle();
 
-      if (error) {
-        console.error("Failed to load user profile:", error.message);
+        if (error) {
+          console.error("[Layout] Failed to load user profile:", error.message);
+        } else if (data) {
+          setProfile(data);
+        } else {
+          console.warn("[Layout] No profile found for user:", user.id);
+        }
+      } catch (err) {
+        console.error("[Layout] Unexpected error:", err);
+      } finally {
+        setLoadingProfile(false);
       }
-
-      setProfile(data ?? null);
-      setLoadingProfile(false);
     };
 
-    loadProfile();
-  }, [user]);
+    // ⏱️ small delay ensures it runs after session hydration
+    const timeout = setTimeout(loadProfile, 150);
+    return () => clearTimeout(timeout);
+  }, [user?.id, session]); // depend on session too
 
   // ✅ Logout handler
   const handleLogout = async () => {
-    await signOut();
-    navigate("/login");
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      console.error("[Layout] Logout error:", err);
+    }
   };
 
   // ✅ Display logic
