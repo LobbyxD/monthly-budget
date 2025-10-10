@@ -354,6 +354,17 @@ export default function UserDashboard() {
   const diffColorExpected = diffExpected >= 0 ? "#22c55e" : "#ef4444";
   const diffColorActual = diffActual >= 0 ? "#22c55e" : "#ef4444";
 
+  const getSpentColor = (t) => {
+    const spent = Number(t.spent || 0);
+    const budget = Number(t.budget || 0);
+
+    if (budget === 0 && spent === 0) return "var(--text)"; // white/default
+    if (spent < budget) return "#22c55e"; // green
+    if (spent === budget) return "#f59e0b"; // orange
+    if (spent > budget) return "#ef4444"; // red
+    return "var(--text)";
+  };
+
   // ---------- Render ----------
   return (
     <div className="dashboard-page">
@@ -480,7 +491,7 @@ export default function UserDashboard() {
                         </span>
                       )}
                     </td>
-                    <td style={{ color: diffColorActual }}>
+                    <td style={{ color: getSpentColor(t) }}>
                       <input
                         type="number"
                         className="editable"

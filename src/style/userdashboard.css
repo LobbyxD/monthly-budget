@@ -86,6 +86,7 @@
 
 .budget-table td {
   color: var(--text);
+  transition: color 0.25s ease;
 }
 
 .budget-table tr:hover {
