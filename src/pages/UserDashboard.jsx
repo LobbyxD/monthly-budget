@@ -198,7 +198,7 @@ export default function UserDashboard() {
       type: "expense",
       category: "",
       budget: 0,
-      spent: 0,
+      spent: null,
       description: "",
       payment: 1,
       created_at: fakeDay,
@@ -241,7 +241,7 @@ export default function UserDashboard() {
     }
 
     if (field === "spent") {
-      const spent = value === "" || value === null ? 0 : Number(value);
+      const spent = value === "" || value === null ? 0 : Number(value); // Number(value) || 0;
       const { error } = await supabase
         .from("transactions")
         .update({ spent })
@@ -253,12 +253,22 @@ export default function UserDashboard() {
 
     if (field === "budget") {
       const budget = Number(value) || 0;
-      const spent = Math.round(budget / (row.payment || 1));
+      let spent = row.spent || null;
+
+      if ((row.payment || 1) > 1)
+        spent = Math.round(budget / (row.payment || 1));
+
       await supabase
         .from("transactions")
         .update({ budget, spent })
         .eq("id", id);
-      await supabase.from("transactions").update({ spent }).eq("parent_id", id);
+
+      if ((row.payment || 1) > 1)
+        await supabase
+          .from("transactions")
+          .update({ spent })
+          .eq("parent_id", id);
+
       fetchAll();
       return;
     }
@@ -358,10 +368,10 @@ export default function UserDashboard() {
     const spent = Number(t.spent || 0);
     const budget = Number(t.budget || 0);
 
-    if (budget === 0 && spent === 0) return "var(--text)"; // white/default
-    if (spent < budget) return "#22c55e"; // green
-    if (spent === budget) return "#f59e0b"; // orange
-    if (spent > budget) return "#ef4444"; // red
+    if (spent === 0) return "var(--text)"; // white/default
+    if (spent < budget) return "#22C55E"; // green: good
+    if (spent === budget) return "#FBBF24"; // yellow/orange: caution
+    if (spent > budget) return "#EF4444"; // red: overspent
     return "var(--text)";
   };
 
@@ -455,6 +465,15 @@ export default function UserDashboard() {
         ) : (
           <div className="budget-table-wrapper">
             <table className="budget-table">
+              <colgroup>
+                <col style={{ width: "15%" }} /> {/* Category */}
+                <col style={{ width: "10%" }} /> {/* Spent */}
+                <col style={{ width: "10%" }} /> {/* Budget */}
+                <col style={{ width: "10%" }} /> {/* Type */}
+                <col style={{ width: "10%" }} /> {/* Payment */}
+                <col style={{ width: "35%" }} /> {/* Description (wider) */}
+                <col style={{ width: "10%" }} /> {/* Delete button */}
+              </colgroup>
               <thead>
                 <tr>
                   <th>Category</th>
@@ -495,7 +514,11 @@ export default function UserDashboard() {
                       <input
                         type="number"
                         className="editable"
-                        value={t.spent ?? ""}
+                        value={
+                          t.spent === null || t.spent === undefined
+                            ? ""
+                            : t.spent
+                        }
                         onChange={(e) =>
                           handleChange(t.id, "spent", e.target.value)
                         }
