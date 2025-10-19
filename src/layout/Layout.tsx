@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, JSX } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "../style/layout.css";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import HouseholdDropdown from "../components/HouseholdDropdown";
 
 interface UserProfile {
   firstName: string | null;
@@ -19,6 +20,8 @@ export default function Layout(): JSX.Element {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [openHouseholds, setOpenHouseholds] = useState(false);
 
   // ✅ Close dropdown when clicking outside
   useEffect(() => {
@@ -115,7 +118,35 @@ export default function Layout(): JSX.Element {
             </button>
 
             {open && (
-              <div className="user-dropdown">
+              <div
+                className="user-dropdown"
+                onMouseLeave={() => {
+                  setOpenHouseholds(false);
+                }}
+              >
+                <div
+                  className="dropdown-item"
+                  onMouseEnter={() => setOpenHouseholds(true)}
+                  onClick={() => setOpenHouseholds((v) => !v)}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <span>Households</span>
+                  <span className="arrow">▸</span>
+                </div>
+
+                {openHouseholds && (
+                  <HouseholdDropdown
+                    onClose={() => {
+                      setOpen(false);
+                      setOpenHouseholds(false);
+                    }}
+                  />
+                )}
+
                 <button
                   className="dropdown-item"
                   onClick={() => {
@@ -125,6 +156,7 @@ export default function Layout(): JSX.Element {
                 >
                   Settings
                 </button>
+
                 <button className="dropdown-item logout" onClick={handleLogout}>
                   Sign out
                 </button>
