@@ -168,7 +168,7 @@ export default function UserDashboard() {
       if (insertErr) console.error(insertErr);
     }
 
-    await fetchAll();
+    setSalary(numValue.toString());
   };
 
   const handleSalaryChange = (e) => {
@@ -219,7 +219,10 @@ export default function UserDashboard() {
       .delete()
       .or(`id.eq.${txid},parent_id.eq.${txid}`);
     if (error) console.error("❌ Delete failed:", error.message);
-    else fetchAll();
+    else
+      setTransactions((prev) =>
+        prev.filter((t) => t.id !== txid && t.parent_id !== txid)
+      );
   };
 
   const handleChange = (id, field, value) => {
@@ -236,7 +239,13 @@ export default function UserDashboard() {
         .from("transactions")
         .update({ [field]: value })
         .or(`id.eq.${id},parent_id.eq.${id}`);
-      fetchAll();
+
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.id === id || t.parent_id === id ? { ...t, [field]: value } : t
+        )
+      );
+
       return;
     }
 
@@ -247,7 +256,12 @@ export default function UserDashboard() {
         .update({ spent })
         .eq("id", id);
       if (error) console.error("❌ Spent update failed:", error.message);
-      else fetchAll();
+      else {
+        setTransactions((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, spent } : t))
+        );
+      }
+
       return;
     }
 
@@ -269,7 +283,14 @@ export default function UserDashboard() {
           .update({ spent })
           .eq("parent_id", id);
 
-      fetchAll();
+      setTransactions((prev) =>
+        prev.map((t) => {
+          if (t.id === id) return { ...t, budget, spent };
+          if (t.parent_id === id) return { ...t, spent };
+          return t;
+        })
+      );
+
       return;
     }
 
@@ -313,8 +334,10 @@ export default function UserDashboard() {
         }
         await supabase.from("transactions").insert(newTxs);
       }
-      fetchAll();
-      return;
+      setTransactions((prev) => {
+        const filtered = prev.filter((t) => t.id !== id && t.parent_id !== id);
+        return [...filtered, ...newTxs, { ...row, payment: payments, spent }];
+      });
     }
   };
 
