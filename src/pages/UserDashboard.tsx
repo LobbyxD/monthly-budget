@@ -5,6 +5,26 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import "../style/global.css";
 import "../style/userdashboard.css";
+import {
+  DndContext,
+  useSensor,
+  useSensors,
+  PointerSensor,
+  closestCenter,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { GripVertical } from "lucide-react";
+import {
+  restrictToVerticalAxis,
+  restrictToWindowEdges,
+} from "@dnd-kit/modifiers";
 
 /** ---------- Types ---------- */
 interface Transaction {
@@ -20,6 +40,7 @@ interface Transaction {
   installment_index: number | null;
   total_installments: number | null;
   created_at: string;
+  display_order: number | null;
 }
 
 interface MonthlySummary {
@@ -102,6 +123,48 @@ export default function UserDashboard() {
     return Number(val).toLocaleString();
   };
 
+  /** ---------- Ordering helpers (fractional ordering) ---------- */
+  function getNewOrder(before?: number | null, after?: number | null): number {
+    if (before == null && after == null) return 1; // empty list
+    if (before == null && after != null) return after - 1; // insert at top
+    if (after == null && before != null) return before + 1; // insert at bottom
+    // insert between
+    return ((before as number) + (after as number)) / 2;
+  }
+
+  /** Get the next order at the bottom for the current month scope */
+  async function getNextDisplayOrderForMonth(
+    authId: string,
+    start: Date,
+    end: Date
+  ): Promise<number> {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("display_order")
+      .eq("user_id", authId)
+      .gte("created_at", toIso(start))
+      .lte("created_at", toIso(end))
+      .order("display_order", { ascending: false, nullsFirst: false })
+      .limit(1);
+
+    if (error) {
+      console.error("❌ getNextDisplayOrderForMonth error:", error.message);
+      return 1;
+    }
+    const maxVal = data?.[0]?.display_order ?? 0;
+    return Number(maxVal) + 1;
+  }
+
+  /** Persist a new display order for a single row */
+  async function persistDisplayOrder(id: number, newOrder: number) {
+    const { error } = await supabase
+      .from("transactions")
+      .update({ display_order: newOrder })
+      .eq("id", id);
+
+    if (error) throw error;
+  }
+
   /** ---------- Resolve which user ---------- */
   useEffect(() => {
     const resolveUser = async () => {
@@ -145,7 +208,8 @@ export default function UserDashboard() {
         .eq("user_id", authId)
         .gte("created_at", toIso(start))
         .lte("created_at", toIso(end))
-        .order("id", { ascending: true });
+        .order("display_order", { ascending: true, nullsFirst: true })
+        .order("id", { ascending: true }); // tie-breaker
 
       setTransactions((txs as Transaction[]) || []);
     } catch (err) {
@@ -226,6 +290,9 @@ export default function UserDashboard() {
   const handleAdd = async () => {
     if (!authId) return;
     const fakeDay = new Date(year, month, 15).toISOString();
+
+    const nextOrder = await getNextDisplayOrderForMonth(authId, start, end);
+
     const newTx: Omit<Transaction, "id"> = {
       user_id: authId,
       type: "expense",
@@ -238,6 +305,7 @@ export default function UserDashboard() {
       parent_id: null,
       installment_index: null,
       total_installments: null,
+      display_order: nextOrder, // 👈 NEW
     };
     const { data, error } = await supabase
       .from("transactions")
@@ -397,6 +465,40 @@ export default function UserDashboard() {
     );
   };
 
+  /** ---------- Drag End Handler ---------- */
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return; // same place or dropped outside
+
+    const oldIndex = transactions.findIndex((t) => t.id === active.id);
+    const newIndex = transactions.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newItems = arrayMove(transactions, oldIndex, newIndex);
+    setTransactions(newItems);
+
+    // compute new fractional order using your helper
+    const before = newIndex > 0 ? newItems[newIndex - 1]?.display_order : null;
+    const after =
+      newIndex < newItems.length - 1
+        ? newItems[newIndex + 1]?.display_order
+        : null;
+    const newOrder = getNewOrder(before, after);
+
+    try {
+      await persistDisplayOrder(active.id as number, newOrder);
+      setTransactions((prev) =>
+        prev.map((t) =>
+          t.id === active.id ? { ...t, display_order: newOrder } : t
+        )
+      );
+    } catch (err: any) {
+      console.error("❌ Failed to persist new order:", err.message);
+      // revert UI if update fails
+      setTransactions(transactions);
+    }
+  };
+
   /** ---------- Totals ---------- */
   const totalSpent = transactions.reduce((sum, t) => {
     const spent = Number(t.spent || 0);
@@ -429,6 +531,201 @@ export default function UserDashboard() {
     if (spent > budget) return "#EF4444";
     return "var(--text)";
   };
+
+  /** ---------- Reorder ---------- */
+  async function moveRowByIndex(sourceIndex: number, destIndex: number) {
+    setTransactions((prev) => {
+      const arr = [...prev];
+      const [moved] = arr.splice(sourceIndex, 1);
+      arr.splice(destIndex, 0, moved);
+      return arr;
+    });
+
+    // compute new display_order based on neighbors in the *new* array
+    const current = (idx: number) => transactions[idx];
+    const before =
+      destIndex > 0 ? transactions[destIndex - 1]?.display_order : null;
+    const after =
+      destIndex < transactions.length
+        ? transactions[destIndex]?.display_order
+        : null;
+
+    const newOrder = getNewOrder(before, after);
+
+    try {
+      await persistDisplayOrder(transactions[sourceIndex].id, newOrder);
+      // also reflect it in local state to avoid refetch:
+      setTransactions((prev) =>
+        prev.map((t, i) =>
+          i === destIndex ? { ...t, display_order: newOrder } : t
+        )
+      );
+    } catch (e: any) {
+      console.error("❌ Failed to persist new order:", e?.message);
+      // Optional: revert UI if you want
+      fetchAll();
+    }
+  }
+
+  /** ---------- Sortable Row Component ---------- */
+  interface SortableRowProps {
+    transaction: Transaction;
+    index: number;
+    onDelete: (id: number) => void;
+    onChange: (id: number, field: keyof Transaction, value: any) => void;
+    onBlur: (
+      id: number,
+      field: keyof Transaction,
+      value: any,
+      row: Transaction
+    ) => void;
+    onTypeToggle: (t: Transaction) => void;
+    isNonOriginal: (t: Transaction) => boolean;
+    getSpentColor: (t: Transaction) => string;
+  }
+
+  function SortableRow({
+    transaction: t,
+    index,
+    onDelete,
+    onChange,
+    onBlur,
+    onTypeToggle,
+    isNonOriginal,
+    getSpentColor,
+  }: SortableRowProps) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: t.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.6 : 1,
+      background: isDragging ? "var(--hover-row)" : undefined,
+    };
+
+    /** ---------- DnD Sensors ---------- */
+    const sensors = useSensors(
+      useSensor(PointerSensor, {
+        activationConstraint: { distance: 5 }, // require small drag motion before activation
+      })
+    );
+
+    return (
+      <tr
+        ref={setNodeRef}
+        style={style}
+        className="draggable-row"
+        {...attributes}
+      >
+        {/* Drag handle cell */}
+        <td className="drag-cell" {...listeners}>
+          <GripVertical className="drag-icon" size={18} />
+        </td>
+
+        {/* Category */}
+        <td>
+          <input
+            className="editable"
+            value={t.category || ""}
+            onChange={(e) => onChange(t.id, "category", e.target.value)}
+            onBlur={(e) => onBlur(t.id, "category", e.target.value, t)}
+            disabled={isNonOriginal(t)}
+          />
+          {t.total_installments && t.total_installments > 1 && (
+            <span className="installment-tag">
+              [{t.installment_index}/{t.total_installments}]
+            </span>
+          )}
+        </td>
+
+        {/* Spent */}
+        <td style={{ color: getSpentColor(t) }}>
+          <input
+            type="number"
+            className="editable"
+            value={t.spent ?? ""}
+            onChange={(e) => onChange(t.id, "spent", e.target.value)}
+            onBlur={(e) => onBlur(t.id, "spent", e.target.value, t)}
+            disabled={(t.payment ?? 1) > 1 || t.parent_id !== null}
+          />
+        </td>
+
+        {/* Budget */}
+        <td>
+          <input
+            type="number"
+            className="editable"
+            value={t.budget ?? ""}
+            onChange={(e) => onChange(t.id, "budget", e.target.value)}
+            onBlur={(e) => onBlur(t.id, "budget", e.target.value, t)}
+            disabled={isNonOriginal(t)}
+          />
+        </td>
+
+        {/* Type */}
+        <td>
+          <span
+            className={`type-label small ${t.type}`}
+            onClick={() => onTypeToggle(t)}
+            style={{
+              cursor:
+                t.parent_id || (t.total_installments ?? 0) > 1
+                  ? "not-allowed"
+                  : "pointer",
+              opacity: t.parent_id || (t.total_installments ?? 0) > 1 ? 0.6 : 1,
+            }}
+          >
+            {t.type}
+          </span>
+        </td>
+
+        {/* Payment */}
+        <td>
+          <input
+            type="number"
+            className="editable"
+            value={t.payment ?? ""}
+            onChange={(e) => onChange(t.id, "payment", e.target.value)}
+            onBlur={(e) => onBlur(t.id, "payment", e.target.value, t)}
+            disabled={isNonOriginal(t)}
+          />
+        </td>
+
+        {/* Description */}
+        <td>
+          <input
+            className="editable"
+            value={t.description || ""}
+            onChange={(e) => onChange(t.id, "description", e.target.value)}
+            onBlur={(e) => onBlur(t.id, "description", e.target.value, t)}
+            disabled={isNonOriginal(t)}
+          />
+        </td>
+
+        {/* Delete */}
+        <td>
+          {!isNonOriginal(t) && (
+            <button className="delete-row" onClick={() => onDelete(t.id)}>
+              X
+            </button>
+          )}
+        </td>
+      </tr>
+    );
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 }, // requires slight movement before drag starts
+    })
+  );
 
   /** ---------- Render ---------- */
   return (
@@ -521,6 +818,8 @@ export default function UserDashboard() {
           <div className="budget-table-wrapper">
             <table className="budget-table">
               <colgroup>
+                <col style={{ width: "3%" }} />{" "}
+                {/* 👈 new drag handle column */}
                 <col style={{ width: "15%" }} />
                 <col style={{ width: "10%" }} />
                 <col style={{ width: "10%" }} />
@@ -529,8 +828,10 @@ export default function UserDashboard() {
                 <col style={{ width: "35%" }} />
                 <col style={{ width: "10%" }} />
               </colgroup>
+
               <thead>
                 <tr>
+                  <th></th> {/* reorder */}
                   <th>Category</th>
                   <th>Spent</th>
                   <th>Budget</th>
@@ -544,115 +845,37 @@ export default function UserDashboard() {
                   </th>
                 </tr>
               </thead>
-              <tbody>
-                {transactions.map((t) => (
-                  <tr key={t.id}>
-                    <td>
-                      <input
-                        className="editable"
-                        value={t.category || ""}
-                        onChange={(e) =>
-                          handleChange(t.id, "category", e.target.value)
-                        }
-                        onBlur={(e) =>
-                          handleBlur(t.id, "category", e.target.value, t)
-                        }
-                        disabled={isNonOriginal(t)}
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
+              >
+                <SortableContext
+                  items={transactions.map((t) => t.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <tbody>
+                    {transactions.map((t, index) => (
+                      <SortableRow
+                        key={t.id}
+                        transaction={t}
+                        index={index}
+                        onDelete={handleDelete}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        onTypeToggle={handleTypeToggle}
+                        isNonOriginal={isNonOriginal}
+                        getSpentColor={getSpentColor}
                       />
-                      {t.total_installments && t.total_installments > 1 && (
-                        <span className="installment-tag">
-                          [{t.installment_index}/{t.total_installments}]
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ color: getSpentColor(t) }}>
-                      <input
-                        type="number"
-                        className="editable"
-                        value={t.spent ?? ""}
-                        onChange={(e) =>
-                          handleChange(t.id, "spent", e.target.value)
-                        }
-                        onBlur={(e) =>
-                          handleBlur(t.id, "spent", e.target.value, t)
-                        }
-                        disabled={(t.payment ?? 1) > 1 || t.parent_id !== null}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="editable"
-                        value={t.budget ?? ""}
-                        onChange={(e) =>
-                          handleChange(t.id, "budget", e.target.value)
-                        }
-                        onBlur={(e) =>
-                          handleBlur(t.id, "budget", e.target.value, t)
-                        }
-                        disabled={isNonOriginal(t)}
-                      />
-                    </td>
-                    <td>
-                      <span
-                        className={`type-label small ${t.type}`}
-                        onClick={() => handleTypeToggle(t)}
-                        style={{
-                          cursor:
-                            t.parent_id || (t.total_installments ?? 0) > 1
-                              ? "not-allowed"
-                              : "pointer",
-                          opacity:
-                            t.parent_id || (t.total_installments ?? 0) > 1
-                              ? 0.6
-                              : 1,
-                        }}
-                      >
-                        {t.type}
-                      </span>
-                    </td>
-                    <td>
-                      <input
-                        type="number"
-                        className="editable"
-                        value={t.payment ?? ""}
-                        onChange={(e) =>
-                          handleChange(t.id, "payment", e.target.value)
-                        }
-                        onBlur={(e) =>
-                          handleBlur(t.id, "payment", e.target.value, t)
-                        }
-                        disabled={isNonOriginal(t)}
-                      />
-                    </td>
-                    <td>
-                      <input
-                        className="editable"
-                        value={t.description || ""}
-                        onChange={(e) =>
-                          handleChange(t.id, "description", e.target.value)
-                        }
-                        onBlur={(e) =>
-                          handleBlur(t.id, "description", e.target.value, t)
-                        }
-                        disabled={isNonOriginal(t)}
-                      />
-                    </td>
-                    <td>
-                      {!isNonOriginal(t) && (
-                        <button
-                          className="delete-row"
-                          onClick={() => handleDelete(t.id)}
-                        >
-                          X
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
+                    ))}
+                  </tbody>
+                </SortableContext>
+              </DndContext>
+
               <tfoot>
                 <tr className="total-row">
+                  <td></td> {/*reorder*/}
                   <td>
                     <b>Total</b>
                   </td>
@@ -663,18 +886,20 @@ export default function UserDashboard() {
                     <b>{totalBudget.toLocaleString()}₪</b>
                   </td>
                   <td colSpan={3} style={{ textAlign: "right" }}>
+                    <span style={{ color: "var(--text)" }}>Current: </span>
+                    <span style={{ color: diffColorActual }}>
+                      {diffActual >= 0
+                        ? `${diffActual.toLocaleString()}₪`
+                        : `- ${Math.abs(diffActual).toLocaleString()}₪`}
+                    </span>
+                    <span style={{ color: "#374469ff" }}>
+                      &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;
+                    </span>
                     <span style={{ color: "var(--text)" }}>Expected: </span>
                     <span style={{ color: diffColorExpected }}>
                       {diffExpected >= 0
                         ? `${diffExpected.toLocaleString()}₪`
                         : `- ${Math.abs(diffExpected).toLocaleString()}₪`}
-                    </span>
-                    <span style={{ color: "#374469ff" }}> | </span>
-                    <span style={{ color: "var(--text)" }}>Actual: </span>
-                    <span style={{ color: diffColorActual }}>
-                      {diffActual >= 0
-                        ? `${diffActual.toLocaleString()}₪`
-                        : `- ${Math.abs(diffActual).toLocaleString()}₪`}
                     </span>
                   </td>
                   <td></td>

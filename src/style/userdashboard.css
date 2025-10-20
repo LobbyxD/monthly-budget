@@ -94,6 +94,56 @@
   transition: background-color 0.2s;
 }
 
+/* === Compact Transaction Row Design === */
+.budget-table th,
+.budget-table td {
+  padding: 0.45rem 0.5rem; /* reduced height */
+  font-size: 1rem; /* smaller text for a denser table */
+  line-height: 1.3;
+}
+
+.budget-table input {
+  font-size: 0.82rem;
+  padding: 0.2rem 0.3rem; /* tighter spacing inside editable cells */
+}
+
+.type-label.small {
+  font-size: 0.75rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+}
+
+.installment-tag {
+  font-size: 0.7rem;
+  margin-left: 4px;
+  opacity: 0.75;
+}
+
+/* Slimmer delete button */
+.delete-row {
+  font-size: 1rem;
+  opacity: 0;
+  padding: 0;
+  margin: 0;
+}
+.budget-table tr:hover .delete-row {
+  opacity: 1;
+  color: var(--delete);
+}
+
+/* Subtle hover highlight */
+.budget-table tr:hover {
+  background-color: color-mix(in oklab, var(--hover-bg) 90%, transparent);
+  transition: background-color 0.15s ease;
+}
+
+/* Tighter total row */
+.total-row td {
+  padding-top: 0.6rem;
+  padding-bottom: 0.6rem;
+  font-size: 0.85rem;
+}
+
 /* ---------- Animations ---------- */
 @keyframes fadeIn {
   from {
@@ -209,7 +259,6 @@
 }
 
 .add-row {
-  margin-top: 1.2rem;
   background: var(--accent);
   color: white;
   border: none;
@@ -535,4 +584,29 @@ input[disabled]:hover {
   background-color: var(--hover-row);
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Drag handle cell */
+.drag-cell {
+  width: 2rem;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.draggable-row:hover .drag-cell {
+  opacity: 1;
+}
+
+.drag-icon {
+  color: var(--muted-text);
+  transition: color 0.15s;
+}
+.drag-cell:hover .drag-icon {
+  color: var(--accent);
+  cursor: grab;
+}
+
+.draggable-row.dragging {
+  background-color: var(--hover-row);
 }
