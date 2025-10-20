@@ -15,6 +15,7 @@
   --hover-bg: #f3f4f6;
   --hover-row: #f3f4f6;
   --shadow: rgba(0, 0, 0, 0.1);
+  --mobile-breakpoint: 768px;
 }
 
 [data-theme="dark"] {
@@ -134,4 +135,34 @@ body {
   background-color: var(--hover-bg);
   transform: translateY(-3px);
   transition: all 0.2s ease;
+}
+
+/* Mobile */
+html,
+body {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch; /* native momentum scrolling */
+}
+
+/* Account for iPhone notch and bottom bar */
+/* Fallback first */
+.dashboard-page {
+  min-height: 100vh;
+  min-height: 100dvh; /* newer browsers override the previous line */
+}
+
+.dashboard-page {
+  min-height: calc(var(--vh, 1vh) * 100);
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom, 20px));
+  box-sizing: border-box;
+}
+
+/* let the main document scroll instead */
+html,
+body {
+  height: auto;
+  min-height: calc(var(--vh, 1vh) * 100);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
 }

@@ -640,3 +640,140 @@ input[disabled]:hover {
   padding: 2px 6px;
   border-radius: 10px;
 }
+
+/* ---------- Mobile Responsive Layout ---------- */
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 1rem;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+
+  .month-title {
+    font-size: 1.2rem;
+    text-align: left;
+  }
+
+  .salary-line {
+    font-size: 0.9rem;
+  }
+
+  /* Budget Table Wrapper: scrollable horizontally */
+  .budget-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .budget-table {
+    width: 700px; /* keep structure, user can scroll horizontally */
+    font-size: 0.85rem;
+  }
+
+  .budget-table th,
+  .budget-table td {
+    padding: 0.3rem 0.5rem;
+  }
+
+  /* Inputs smaller, more touch-friendly */
+  .editable {
+    font-size: 0.85rem;
+    padding: 0.25rem;
+  }
+
+  /* Drag handle smaller */
+  .drag-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  /* Buttons */
+  .add-row.small,
+  .delete-row {
+    font-size: 1rem;
+    padding: 0.2rem 0.4rem;
+  }
+
+  /* Optional: make totals section readable */
+  .total-row {
+    font-size: 0.85rem;
+    text-wrap: balance;
+  }
+}
+
+/* ---------- MOBILE HEADER FIX ---------- */
+@media (max-width: 768px) {
+  .dashboard-header {
+    flex-direction: row; /* Keep arrows and title on one line */
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
+
+  .month-title {
+    flex: 1;
+    text-align: center;
+    font-size: 1.2rem;
+  }
+
+  .nav-arrow {
+    font-size: 1.4rem;
+    padding: 0.3rem 0.6rem;
+    background: transparent;
+    border: none;
+    color: var(--accent);
+  }
+
+  .nav-arrow:active {
+    transform: scale(0.9);
+  }
+}
+
+/* ---------- Compact Mobile Table ---------- */
+@media (max-width: 768px) {
+  .budget-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .budget-table {
+    min-width: 700px; /* maintains table structure, enables horizontal scroll */
+    border-spacing: 0;
+    font-size: 0.85rem;
+  }
+
+  .budget-table th,
+  .budget-table td {
+    padding: 0.3rem 0.4rem;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .budget-table th {
+    position: sticky;
+    top: 0;
+    background: var(--panel-bg);
+    z-index: 2;
+  }
+
+  /* Make rows tighter */
+  .draggable-row {
+    height: 36px;
+  }
+
+  .editable {
+    font-size: 0.85rem;
+    padding: 0.25rem;
+    width: 100%;
+  }
+
+  .salary-line {
+    font-size: 0.9rem;
+  }
+}
