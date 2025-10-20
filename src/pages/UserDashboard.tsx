@@ -114,6 +114,12 @@ export default function UserDashboard() {
     [month, year]
   );
 
+  /** ---------- Determine if this is the current month ---------- */
+  const isCurrentMonth = useMemo(() => {
+    const today = new Date();
+    return today >= start && today <= end;
+  }, [start, end]);
+
   const toIso = (d: Date) => d.toISOString().split("T")[0];
   const formatDate = (d: Date) =>
     `${String(d.getDate()).padStart(2, "0")}/${String(
@@ -747,9 +753,15 @@ export default function UserDashboard() {
           ‹
         </button>
         <div className="month-title">
-          <div>
+          <div
+            className={`month-name ${
+              isCurrentMonth ? "current-month-highlight" : ""
+            }`}
+          >
             {monthNames[month]} {year}
+            {isCurrentMonth && <span className="current-badge">Now</span>}
           </div>
+
           {viewedUserName && user?.id !== authId && (
             <div className="viewed-user-line">
               Viewing: <strong>{viewedUserName}</strong>

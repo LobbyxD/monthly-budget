@@ -622,3 +622,21 @@ input[disabled]:hover {
 .viewed-user-line strong {
   color: var(--accent);
 }
+
+/* ---------- Current Month Highlight ---------- */
+.month-name {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: color 0.2s ease;
+}
+
+.current-badge {
+  background: var(--accent);
+  color: var(--bg);
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
