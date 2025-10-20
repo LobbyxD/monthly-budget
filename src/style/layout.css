@@ -190,3 +190,10 @@
   margin-right: 8px;
   box-shadow: 0 0 0 1px var(--border) inset;
 }
+
+.arrow-right-icon {
+  display: block;
+  vertical-align: middle;
+  position: relative;
+  top: 0.5px; /* small optical correction */
+}

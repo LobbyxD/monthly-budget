@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { useState, useRef, useEffect, JSX } from "react";
 import { supabase } from "../lib/supabaseClient";
 import "../style/layout.css";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowRight } from "lucide-react";
 import HouseholdDropdown from "../components/HouseholdDropdown";
 
 interface UserProfile {
@@ -135,7 +135,13 @@ export default function Layout(): JSX.Element {
                   }}
                 >
                   <span>Households</span>
-                  <span className="arrow">▸</span>
+                  <span className="arrow">
+                    <ArrowRight
+                      size={16}
+                      strokeWidth={2.2}
+                      className="arrow-right-icon"
+                    />
+                  </span>
                 </div>
 
                 {openHouseholds && (
