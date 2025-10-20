@@ -610,3 +610,15 @@ input[disabled]:hover {
 .draggable-row.dragging {
   background-color: var(--hover-row);
 }
+
+.viewed-user-line {
+  margin-top: 4px;
+  font-size: 0.85rem;
+  color: var(--muted-text);
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.viewed-user-line strong {
+  color: var(--accent);
+}

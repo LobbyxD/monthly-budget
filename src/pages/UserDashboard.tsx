@@ -83,6 +83,8 @@ export default function UserDashboard() {
   const mirrorRef = useRef<HTMLSpanElement | null>(null);
   const salaryRef = useRef<HTMLInputElement | null>(null);
 
+  const [viewedUserName, setViewedUserName] = useState<string | null>(null);
+
   const monthNames = [
     "January",
     "February",
@@ -171,18 +173,27 @@ export default function UserDashboard() {
       if (public_id) {
         const { data, error } = await supabase
           .from("users")
-          .select("auth_id")
+          .select("auth_id, firstName, lastName")
           .eq("public_id", public_id)
           .maybeSingle();
 
-        if (error)
+        if (error) {
           console.error("❌ Failed to find user by public_id:", error.message);
-        else if (data?.auth_id) setAuthId(data.auth_id);
-        else {
+        } else if (data?.auth_id) {
+          setAuthId(data.auth_id);
+          const fullName = [data.firstName, data.lastName]
+            .filter(Boolean)
+            .join(" ");
+          setViewedUserName(fullName || "Unnamed User");
+        } else {
           console.warn("⚠️ No user found for public_id:", public_id);
           setAuthId(null);
+          setViewedUserName(null);
         }
-      } else setAuthId(user?.id || null);
+      } else {
+        setAuthId(user?.id || null);
+        setViewedUserName(null); // viewing self
+      }
     };
     resolveUser();
   }, [public_id, user?.id]);
@@ -739,6 +750,12 @@ export default function UserDashboard() {
           <div>
             {monthNames[month]} {year}
           </div>
+          {viewedUserName && user?.id !== authId && (
+            <div className="viewed-user-line">
+              Viewing: <strong>{viewedUserName}</strong>
+            </div>
+          )}
+
           <div className="month-range">
             {formatDate(start)} – {formatDate(end)}
             <span
