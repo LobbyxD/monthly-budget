@@ -1,5 +1,13 @@
 // src/pages/UserDashboard.tsx
-import { useEffect, useState, useMemo, useRef, ChangeEvent } from "react";
+import {
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+  ChangeEvent,
+  useCallback,
+  memo,
+} from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
@@ -42,17 +50,195 @@ interface Transaction {
   created_at: string;
   display_order: number | null;
 }
-
 interface MonthlySummary {
   id?: number;
   user_id: string;
   month: string;
   salary_amount: number;
 }
+type RouteParams = { public_id?: string };
 
-type RouteParams = {
-  public_id?: string;
-};
+/* ---------- Sortable Row ---------- */
+interface SortableRowProps {
+  transaction: Transaction;
+  index: number;
+  onDelete: (id: number) => void;
+  onChange: (id: number, field: keyof Transaction, value: any) => void;
+  onBlur: (
+    id: number,
+    field: keyof Transaction,
+    value: any,
+    row: Transaction
+  ) => void;
+  onTypeToggle: (t: Transaction) => void;
+  isNonOriginal: (t: Transaction) => boolean;
+  getSpentColor: (t: Transaction) => string;
+}
+
+const SortableRow = memo(function SortableRow({
+  transaction: t,
+  index,
+  onDelete,
+  onChange,
+  onBlur,
+  onTypeToggle,
+  isNonOriginal,
+  getSpentColor,
+}: SortableRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: t.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    background: isDragging ? "var(--hover-row)" : undefined,
+  };
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="draggable-row"
+      {...attributes}
+    >
+      <td className="drag-cell" {...listeners}>
+        <GripVertical className="drag-icon" size={18} />
+      </td>
+      <td>
+        <input
+          className="editable"
+          value={t.category || ""}
+          onChange={(e) => onChange(t.id, "category", e.target.value)}
+          onBlur={(e) => onBlur(t.id, "category", e.target.value, t)}
+          disabled={isNonOriginal(t)}
+        />
+        {t.total_installments && t.total_installments > 1 && (
+          <span className="installment-tag">
+            [{t.installment_index}/{t.total_installments}]
+          </span>
+        )}
+      </td>
+      <td style={{ color: getSpentColor(t) }}>
+        <input
+          type="number"
+          className="editable"
+          value={t.spent ?? ""}
+          onChange={(e) => onChange(t.id, "spent", e.target.value)}
+          onBlur={(e) => onBlur(t.id, "spent", e.target.value, t)}
+          disabled={(t.payment ?? 1) > 1 || t.parent_id !== null}
+        />
+      </td>
+      <td>
+        <input
+          type="number"
+          className="editable"
+          value={t.budget ?? ""}
+          onChange={(e) => onChange(t.id, "budget", e.target.value)}
+          onBlur={(e) => onBlur(t.id, "budget", e.target.value, t)}
+          disabled={isNonOriginal(t)}
+        />
+      </td>
+      <td>
+        <span
+          className={`type-label small ${t.type}`}
+          onClick={() => onTypeToggle(t)}
+          style={{
+            cursor:
+              t.parent_id || (t.total_installments ?? 0) > 1
+                ? "not-allowed"
+                : "pointer",
+            opacity: t.parent_id || (t.total_installments ?? 0) > 1 ? 0.6 : 1,
+          }}
+        >
+          {t.type}
+        </span>
+      </td>
+      <td>
+        <input
+          type="number"
+          className="editable"
+          value={t.payment ?? ""}
+          onChange={(e) => onChange(t.id, "payment", e.target.value)}
+          onBlur={(e) => onBlur(t.id, "payment", e.target.value, t)}
+          disabled={isNonOriginal(t)}
+        />
+      </td>
+      <td>
+        <input
+          className="editable"
+          value={t.description || ""}
+          onChange={(e) => onChange(t.id, "description", e.target.value)}
+          onBlur={(e) => onBlur(t.id, "description", e.target.value, t)}
+          disabled={isNonOriginal(t)}
+        />
+      </td>
+      <td>
+        {!isNonOriginal(t) && (
+          <button className="delete-row" onClick={() => onDelete(t.id)}>
+            X
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+});
+
+/* ---------- TransactionsTable (Stable DnD Context) ---------- */
+const TransactionsTable = memo(function TransactionsTable({
+  transactions,
+  handleDragEnd,
+  ...rowProps
+}: {
+  transactions: Transaction[];
+  handleDragEnd: (event: DragEndEvent) => void;
+  onDelete: (id: number) => void;
+  onChange: (id: number, field: keyof Transaction, value: any) => void;
+  onBlur: (
+    id: number,
+    field: keyof Transaction,
+    value: any,
+    row: Transaction
+  ) => void;
+  onTypeToggle: (t: Transaction) => void;
+  isNonOriginal: (t: Transaction) => boolean;
+  getSpentColor: (t: Transaction) => string;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
+    >
+      <SortableContext
+        items={transactions.map((t) => t.id)}
+        strategy={verticalListSortingStrategy}
+      >
+        <tbody>
+          {transactions.map((t, index) => (
+            <SortableRow
+              key={t.id}
+              transaction={t}
+              index={index}
+              {...rowProps}
+            />
+          ))}
+        </tbody>
+      </SortableContext>
+    </DndContext>
+  );
+});
 
 /** ---------- Component ---------- */
 export default function UserDashboard() {
@@ -433,14 +619,19 @@ export default function UserDashboard() {
         .eq("id", id);
       await supabase.from("transactions").delete().eq("parent_id", id);
 
-      const newTxs: Transaction[] = [];
+      const base = { ...row };
+      delete (base as any).id; // remove id to avoid duplicate PK
+      delete (base as any).display_order; // optional — let new rows auto-order if needed
+
+      const newTxs: Omit<Transaction, "id">[] = [];
+
       if (payments > 1) {
         for (let i = 2; i <= payments; i++) {
           const nextDate = new Date(row.created_at);
           nextDate.setMonth(nextDate.getMonth() + (i - 1));
+
           newTxs.push({
-            ...row,
-            id: 0,
+            ...base,
             parent_id: id,
             installment_index: i,
             total_installments: payments,
@@ -449,13 +640,36 @@ export default function UserDashboard() {
             created_at: nextDate.toISOString(),
           });
         }
-        await supabase.from("transactions").insert(newTxs);
-      }
 
-      setTransactions((prev) => {
-        const filtered = prev.filter((t) => t.id !== id && t.parent_id !== id);
-        return [...filtered, ...newTxs, { ...row, payment: payments, spent }];
-      });
+        const { data: inserted, error: insertError } = await supabase
+          .from("transactions")
+          .insert(newTxs)
+          .select("*");
+
+        if (insertError) {
+          console.error("❌ Insert installments failed:", insertError.message);
+          return;
+        }
+
+        setTransactions((prev) => {
+          const filtered = prev.filter(
+            (t) => t.id !== id && t.parent_id !== id
+          );
+
+          // keep only inserted rows that belong to the current month range
+          const visibleInserted = (inserted as Transaction[]).filter((t) => {
+            const created = new Date(t.created_at);
+            return created >= start && created <= end;
+          });
+
+          // include the updated original transaction
+          return [
+            ...filtered,
+            ...visibleInserted,
+            { ...row, payment: payments, spent },
+          ];
+        });
+      }
     }
   };
 
@@ -874,33 +1088,17 @@ export default function UserDashboard() {
                   </th>
                 </tr>
               </thead>
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
-              >
-                <SortableContext
-                  items={transactions.map((t) => t.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <tbody>
-                    {transactions.map((t, index) => (
-                      <SortableRow
-                        key={t.id}
-                        transaction={t}
-                        index={index}
-                        onDelete={handleDelete}
-                        onChange={handleChange}
-                        onBlur={handleBlur}
-                        onTypeToggle={handleTypeToggle}
-                        isNonOriginal={isNonOriginal}
-                        getSpentColor={getSpentColor}
-                      />
-                    ))}
-                  </tbody>
-                </SortableContext>
-              </DndContext>
+              {/* ✅ Replaced inline DnD with stable component */}
+              <TransactionsTable
+                transactions={transactions}
+                handleDragEnd={handleDragEnd}
+                onDelete={handleDelete}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                onTypeToggle={handleTypeToggle}
+                isNonOriginal={isNonOriginal}
+                getSpentColor={getSpentColor}
+              />
 
               <tfoot>
                 <tr className="total-row">

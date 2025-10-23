@@ -160,9 +160,6 @@ body {
 /* let the main document scroll instead */
 html,
 body {
-  height: auto;
-  min-height: calc(var(--vh, 1vh) * 100);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior: none;
+  height: 100%;
+  overflow: hidden; /* ✅ prevent main scroll */
 }
